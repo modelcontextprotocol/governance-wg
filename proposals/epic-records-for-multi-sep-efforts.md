@@ -80,8 +80,8 @@ names as part of itself, and a **Coordinator** is the one person accountable for
 6. **Done criteria.** Every Epic MUST state the observable condition under which the effort is complete, and the Coordinator MUST mark it complete when that condition holds.
 7. **Lifecycle.** Every Epic MUST be in exactly one of four states — proposed, active, complete, abandoned — and the Coordinator MUST record a reason on abandonment. These are
    states of the effort; they MUST NOT add, rename, or reorder SEP statuses.
-8. **Non-authority.** An Epic MUST NOT gate, rank, delay, or block any individual SEP, and MUST NOT merge or dissolve a Working Group. Precedence, stated explicitly and in this
-   order: **roadmap > working-group roadmap > Epic > individual SEP**.
+8. **Non-authority.** An Epic MUST NOT gate, rank, delay, or block any individual SEP, and MUST NOT merge or dissolve a Working Group. An Epic is descriptive: where it conflicts with
+   the roadmap, a working-group roadmap, or an individual SEP, the Epic is the record that gets updated.
 9. **Boundedness.** Every Epic MUST span two or more member SEPs. If an effort reduces to a single SEP, or membership otherwise falls below two, the Coordinator MUST mark the
    Epic abandoned and that SEP proceeds alone.
 10. **Discoverability without mechanism.** Every Epic MUST carry a stable identifier unique within the project's SEP system, and each member SEP MUST be reachable from its Epic and
