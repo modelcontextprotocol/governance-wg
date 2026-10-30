@@ -26,7 +26,7 @@ This SEP standardizes the capability, not the mechanism: it adds no new SEP stat
 
 ## Motivation
 
-MCP tells authors to decompose large work and then provides no artifact that holds the resulting set: "Consider whether your change might be too large - could it be split into
+MCP suggests splitting a proposal that cannot find a sponsor and provides no artifact that holds the resulting set: "Consider whether your change might be too large - could it be split into
 smaller SEPs?" (`docs/community/contributing.mdx:564`).
 
 - **The roadmap's cross-WG work has no record.** The roadmap asks for a composition review across the Agents, Transports, and Triggers & Events working groups and for an extension
