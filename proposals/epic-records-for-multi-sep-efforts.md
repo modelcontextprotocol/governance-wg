@@ -29,14 +29,14 @@ This SEP standardizes the capability, not the mechanism: it adds no new SEP stat
 MCP suggests splitting a proposal that cannot find a sponsor and provides no artifact that holds the resulting set: "Consider whether your change might be too large - could it be split into
 smaller SEPs?" (`docs/community/contributing.mdx:564`).
 
-- **The roadmap's cross-WG work has no record.** The roadmap asks for a composition review across the Agents, Transports, and Triggers & Events working groups and for an extension
+- **The roadmap's cross-WG work has no record.** The roadmap asks for a composition review across the Tasks & Events and Transports working groups, with the Agents interest group, and for an extension
   contract owned by the SDK WG with the Core Maintainers (`docs/development/roadmap.mdx` § "Priority Areas").
 - **Tasks spans two SEPs and a planned core promotion.** SEP-1686 (`seps/1686-tasks.md` preamble; Standards Track, Final, 2025-10-20) plus SEP-2663 (`seps/2663-tasks-extension.md` preamble;
   Extensions Track, Final, 2026-04-27; "on behalf of the Agents Working Group"), with promotion to core planned (`docs/development/roadmap.mdx` § "Priority Areas"). No artifact
   says the two form one effort or what done means for the pair, and the `tracking` issue covering SEP-2663, #2886, is CLOSED while work continues.
-- **The pre-agreement container is excluded by design.** The work-tracking form covers work "already been discussed and agreed on — not a new proposal"
+- **The existing container is used flat.** The work-tracking form covers work "already been discussed and agreed on — not a new proposal"
   (`.github/ISSUE_TEMPLATE/work_tracking.yml:2-4`), and is used flat: 53 `tracking` issues exist, 19 of them one-per-SEP "(implementation): SEP-NNNN" trackers, none with a git
-  sub-issue.
+  sub-issue. An Epic declared after agreement could use this form, so the question is whether one such issue can hold all seven items across working groups, not whether the form excludes it.
 
 **Lived consequence, not proof of causation.** SEP-1300 (a tool-filtering primitive) and [SEP-2084](https://github.com/modelcontextprotocol/modelcontextprotocol/pull/2084) (a
 server `Groups` primitive) were protocol-surface proposals rejected on pattern-immaturity grounds: "it's unclear what mechanism is the right one in the longrun… not too early
@@ -82,10 +82,10 @@ names as part of itself, and a **Coordinator** is the one person accountable for
    states of the effort; they MUST NOT add, rename, or reorder SEP statuses.
 8. **Non-authority.** An Epic MUST NOT gate, rank, delay, or block any individual SEP, and MUST NOT merge or dissolve a Working Group. Precedence, stated explicitly and in this
    order: **roadmap > working-group roadmap > Epic > individual SEP**.
-9. **Boundedness.** Every Epic MUST span two or more member SEPs. If an effort reduces to a single SEP, or membership otherwise falls below two, the Coordinator MUST withdraw the
-   Epic and that SEP proceeds alone.
+9. **Boundedness.** Every Epic MUST span two or more member SEPs. If an effort reduces to a single SEP, or membership otherwise falls below two, the Coordinator MUST mark the
+   Epic abandoned and that SEP proceeds alone.
 10. **Discoverability without mechanism.** Every Epic MUST carry a stable identifier unique within the project's SEP system, and each member SEP MUST be reachable from its Epic and
-    the Epic from each member SEP. Neither direction's location or form is specified by this SEP; see [Deferred mechanism](#deferred-mechanism).
+    the Epic from each member SEP, except that a member already Final is reachable from the Epic only. Neither direction's location or form is specified by this SEP; see [Deferred mechanism](#deferred-mechanism).
 
 An author MAY maintain a record of an effort that is never declared as an Epic; such a record is allowed but unsupported.
 
@@ -116,11 +116,10 @@ pattern from elsewhere is in scope for this project: the charter template "was a
 | Declare an Epic and name its Coordinator, and record its outcome, non-goals, members, dependencies, and done criteria | Any contributor, with the owning working group's agreement and a Coordinator who is a Working Group Lead or Maintainer |
 | Move an Epic to active, complete, or abandoned                                                                        | The Coordinator                                                                                                        |
 | Sponsor, review, and approve a member SEP                                                                             | Per the SEP process; unchanged by this SEP                                                                             |
-| Approve a member SEP                                                                                                  | Core Maintainers, per the [governance decision process](/community/governance#decision-process)                        |
 
 ### Cross-record effects
 
-An Epic touches five records, and this SEP changes none of them; each owner is named below.
+An Epic touches five records. An Epic record changes none of them; this SEP's own documentation edits are listed under [Backward Compatibility](#backward-compatibility).
 
 | Record                                 | Owner                                                                                                                                  | Changed |
 | -------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------- | ------- |
@@ -190,17 +189,16 @@ inside one working group's charter, the answer is the charter, not an Epic.
 
 ## Backward Compatibility
 
-This SEP introduces a process and does not change protocol behavior. It is **not retroactive**: SEPs that reached Final before it takes effect are unaffected, no existing SEP is
-required to declare an Epic, and no existing SEP's status, number, or content changes. SEP-1686 and SEP-2663 remain Final records; the Epic record in
+This SEP introduces a process and does not change protocol behavior. It requires nothing of existing SEPs: SEPs that reached Final before it takes effect are unaffected, no existing SEP is
+required to declare an Epic, and no existing SEP's status, number, or content changes. An Epic MAY name a Final SEP as a member, from the Epic's side only; SEP-1686 and SEP-2663 remain Final records, and the Epic record in
 [Reference Implementation](#reference-implementation) is added alongside them and governs nothing in them.
 
-The change lands in the documents named below, non-normatively: `docs/community/sep-guidelines.mdx` (types and statuses), `seps/TEMPLATE.md` (preamble),
-`docs/community/feature-lifecycle.mdx`, `docs/community/working-interest-groups.mdx`, `docs/development/roadmap.mdx` (the precedence statement), and the generated
-`docs/seps/index.mdx` via `scripts/render-seps.ts`. Following the counter-example of SEP-2085, whose promised insertion into `docs/community/governance.mdx` never landed
+The policy text lands non-normatively in `docs/community/sep-guidelines.mdx`, `docs/community/feature-lifecycle.mdx`, and `docs/community/working-interest-groups.mdx`. Because the carrier is deferred, the SEP type list and
+`seps/TEMPLATE.md` do not change, and `docs/development/roadmap.mdx` is untouched.
+Following the counter-example of SEP-2085, whose promised insertion into `docs/community/governance.mdx` never landed
 (`seps/2085-governance-succession-and-amendment.md` § "Reference Implementation"), the doc edits land in this SEP's own pull request. The PR must run `npm run generate:seps` and
 commit the generated `docs/seps/<number>-multi-sep-efforts.mdx`, `docs/seps/index.mdx`, and `docs/docs.json`, and the process makes the rename to the PR number mandatory before
-merge (`docs/community/sep-guidelines.mdx` § "Step-by-Step Process"). `check:seps` already fails at current HEAD on pre-existing SEP-2127 drift — the missing `/seps/2127` redirect
-and the `Final` count 42→43 — so a red check in this PR may not be ours.
+merge (`docs/community/sep-guidelines.mdx` § "Step-by-Step Process").
 
 ## Security Implications
 
@@ -219,7 +217,7 @@ process and has no reference implementation") — and this SEP's enumerable arti
 
 1. **The filled Epic record for the Tasks effort**, recorded from artifacts that already exist: the two Final SEPs (`seps/1686-tasks.md` preamble, `seps/2663-tasks-extension.md`
    preamble) and the roadmap's staging statement (`docs/development/roadmap.mdx` § "Priority Areas").
-2. **One back-pointer from each member SEP** to that record, and the reverse member list in the record.
+2. **The member list in the record**, pointing at each member SEP. Both members are Final, so neither takes a back-pointer (`docs/community/sep-guidelines.mdx:260`).
 3. **The documentation edits that carry this policy**, in this SEP's own pull request (`docs/community/sep-guidelines.mdx` § "SEP Review & Resolution").
 
 The table renders the capability in [Specification](#specification) against the Tasks effort. It is an illustrative rendering, **not a proposed template**, and its field headings
@@ -228,10 +226,10 @@ are non-normative.
 | Field         | Content for the Tasks effort                                                                                                                                                                                                                                                                                                                                                |
 | ------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Outcome       | One coherent Tasks capability available to servers and clients, culminating in the extension's inclusion in the core protocol (`docs/development/roadmap.mdx` § "Priority Areas").                                                                                                                                                                                          |
-| Non-goals     | Not the server-initiated event surface itself, and not the composition review spanning Agents, Transports, and Triggers & Events (`docs/development/roadmap.mdx` § "Priority Areas").                                                                                                                                                                                       |
+| Non-goals     | Not the server-initiated event surface itself, and not the composition review spanning Tasks & Events, Transports, and the Agents interest group (`docs/development/roadmap.mdx` § "Priority Areas").                                                                                                                                                                                       |
 | Members       | SEP-1686 (`seps/1686-tasks.md` preamble) and SEP-2663 (`seps/2663-tasks-extension.md` preamble).                                                                                                                                                                                                                                                                            |
 | Dependencies  | SEP-1686 is preserved as a historical record whose feature moved into the extension (`seps/1686-tasks.md:11`, "preserved as a historical record"); promotion to core depends on the extension remaining stable — "Once the extension has stabilized and achieved broad adoption, it is intended to be promoted into the core protocol" (`seps/2663-tasks-extension.md:15`). |
-| Coordinator   | The Agents Working Group Lead — the existing authority SEP-2663 was filed on behalf of (`seps/2663-tasks-extension.md` preamble).                                                                                                                                                                                                                                           |
+| Coordinator   | One named Tasks and Events Working Group Lead, the group that owns Tasks (`docs/community/interest-groups/agents.mdx`). SEP-2663 was filed on behalf of the Agents group, now an Interest Group. |
 | Done criteria | No artifact in this repository states a completion condition for the Tasks effort; recording it as an Epic is what would require one to be written. The nearest statement of intent (`docs/development/roadmap.mdx` § "Priority Areas") is a direction, not a done criterion.                                                                                               |
 
 ---
