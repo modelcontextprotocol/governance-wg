@@ -1,0 +1,37 @@
+# Epic records for multi-SEP efforts
+
+**Proposal:** [`proposals/epic-records-for-multi-sep-efforts.md`](../proposals/epic-records-for-multi-sep-efforts.md) · **Author:** Kryspin Ziemski ([@kziemski](https://github.com/kziemski))
+
+_Citations of `docs/…`, `seps/…`, and `.github/…` refer to `modelcontextprotocol/modelcontextprotocol`, not to this repository._
+
+**Problem.** MCP suggests splitting a proposal that cannot find a sponsor — "Consider whether your change might be too large - could it be split into smaller SEPs?" (`docs/community/contributing.mdx:564`) — and offers no artifact to hold the pieces, so the coupling between sibling SEPs lives in meeting notes and Discord. The roadmap's composition review asks two WGs and an IG to make Tasks and Triggers "compose cleanly with each other" (`docs/development/roadmap.mdx:35`), yet nothing records those efforts' membership, coordination, or done criteria.
+
+**The gap, stated so you can call it wrong.** For a bounded, cross-cutting effort spanning more than one SEP — especially more than one Working Group — no artifact carries all seven of: the single outcome, the non-goals, the member SEPs, the dependencies between them, a coordinator, done criteria, and durability past a roadmap rewrite. I am *not* claiming early alignment is missing: pre-SEP direction requests already use the existing queue with a written artifact ([#3407](https://github.com/modelcontextprotocol/modelcontextprotocol/discussions/3407), 2026-09-30). I claim only that the post-direction record does not exist. `seps/1302-formalize-working-groups-and-interest-groups-in-mc.md:84` already names the unit — "a specific SEP, themed series of SEPs". If a WG charter or a `tracking` issue can already hold these seven items across WGs, tell me and I will withdraw this.
+
+**The capability, plainly.** An Epic would be a durable, citable record of one outcome:
+
+- **Outcome** — the single outcome the member SEPs together deliver.
+- **Scope** — explicit non-goals, not only goals.
+- **Membership** — the member SEPs, declared; a declaration, never a gate.
+- **Dependencies** — which members constrain which, and the consequence of withdrawal or rejection.
+- **Coordinator** — an existing authority (WG Lead or Maintainer); no new role.
+- **Done criteria** — the observable condition for completion, on which the record closes.
+- **Lifecycle** — proposed, active, complete, abandoned; abandonment carries a recorded reason.
+- **Non-authority** — it must not gate, rank, delay or block any individual SEP. It is descriptive: where it conflicts with the roadmap or a SEP, the Epic is what gets updated.
+- **Boundedness** — two or more SEPs; if it reduces to one, it is withdrawn and that SEP proceeds alone.
+- **Discoverability** — a stable identifier and a location reachable from each member SEP.
+
+**Staged, not standardizing ahead of use.** This proposes the capability, not a carrier. First use is the Tasks effort (SEP-1686 + SEP-2663), recorded from material that already exists, plus one in-flight effort; if that shows no use, the idea is dropped and no carrier SEP gets filed. That sequencing is deliberate — it is the stance the Core Maintainers took on SEP-2084 rather than an argument against it.
+
+**The live case left out — SEP-3371.** Review asked for a live example; one exists and this page still does not argue it. One Standards Track SEP carries four capabilities — registration and dependencies, custom methods, message and transport interception, routes and launch — as MUST for every Tier 1 SDK. It has been open since 2026-09-18 and remains `REVIEW_REQUIRED` and `BLOCKED` on 2026-10-28, after 110 inline comments from 13 participants. The order an Epic record would make explicit: conceptual agreement → one SEP for the agreed concept → one SEP per capability → tracking issues in each SDK. What skipping that order costs is observable: `typescript-sdk` #2820 open since 2026-09-16; #3066 (2026-10-22) reworking Skills (#3047, merged 2026-10-20) onto a registration shape it cannot currently use; #2782 stacked behind both since 2026-09-10; and the Filesystems WG skeleton (#1, 2026-10-09) shipping a Python package that is a placeholder "meant to plug in through the SDK's extension points (SEP-3371)". The full write-up follows the pilot. The claim is about the order, not about that SEP's content. The same evidence, laid out by capability level and SDK, is in [`sep-3371-capability-matrix.html`](./sep-3371-capability-matrix.html).
+
+**What this is not.** Not a new SEP status — the status table stays untouched. Not a new approval gate. Not a merge or dissolution of any working group. Not roadmap authority. Not a re-litigation of primitive grouping or of SEP-2084.
+
+**Questions where your input changes the draft:**
+
+1. Mechanism: a `Type: Epic` preamble value, a `tracking`-labelled issue form, a `seps/epics/` index, or a column in the generated SEP index — which is least costly, if any?
+2. Must the coordinator be an existing authority, or may any sponsor hold it?
+3. May an Epic name already-Final SEPs as members, with the link one-way from the Epic, or should Epics be forward only?
+4. What should the abandonment record contain beyond a reason?
+
+**Prior art we are aware of.** `seps/1302-formalize-working-groups-and-interest-groups-in-mc.md:84` names "themed series of SEPs". The `tracking` label tracks agreed work but is explicitly "not a new proposal" (`.github/ISSUE_TEMPLATE/work_tracking.yml:2-4`). A2A has eight `[Epic]`-titled issues (#1986–#1992, #1995, created 2026-06-25, all still open) — an uncodified convention, not a model to copy. And `#993 → #1300 → #2084` are three attempts at one problem with no shared record.

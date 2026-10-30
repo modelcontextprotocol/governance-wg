@@ -1,0 +1,1446 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SEP-3371 capability matrix — hierarchy by SDK</title>
+<style>
+:root {
+  color-scheme: light dark;
+  --bg:#fbfcfe; --panel:#ffffff; --panel-2:#f1f5fa; --fg:#15202b; --muted:#5d6b7c;
+  --border:#dbe3ec; --border-strong:#c3cfdd; --accent:#1f5fbf; --accent-soft:#e8f0fd; --on-accent:#ffffff;
+  --met:#166534; --met-bg:#e8f6ed; --partial:#8a4b00; --partial-bg:#fff4e0;
+  --gap:#b42318; --gap-bg:#fdecea; --na:#7b8794; --na-bg:#f3f5f8;
+  --unknown:#5f6b7a; --unknown-bg:#f0f2f5; --hover:#eef4fc;
+  --shadow:0 1px 2px rgba(16,24,40,.06);
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg:#0d1117; --panel:#121821; --panel-2:#18202b; --fg:#e6edf3; --muted:#9aa7b6;
+    --border:#273241; --border-strong:#364457; --accent:#6ea8fe; --accent-soft:#17263c; --on-accent:#0d1117;
+    --met:#56d364; --met-bg:#12281a; --partial:#e3b341; --partial-bg:#2a2110;
+    --gap:#ff7b72; --gap-bg:#2d1517; --na:#8b949e; --na-bg:#1a2029;
+    --unknown:#9aa7b6; --unknown-bg:#1b222c; --hover:#1a2533; --shadow:none;
+  }
+}
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+[hidden] { display:none !important; }
+body { margin:0; background:var(--bg); color:var(--fg);
+  font:14px/1.45 ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif; }
+a { color: var(--accent); }
+.wrap { max-width: 1460px; margin: 0 auto; padding: 0 20px; }
+.skip { position:absolute; left:-9999px; }
+.skip:focus { left:12px; top:12px; z-index:20; background:var(--panel); padding:8px 12px; border:1px solid var(--accent); border-radius:8px; }
+.page { padding:30px 0 20px; border-bottom:1px solid var(--border);
+  background:linear-gradient(180deg,var(--panel),var(--bg)); }
+.eyebrow { margin:0 0 6px; font-size:11px; letter-spacing:.09em; text-transform:uppercase;
+  color:var(--accent); font-weight:700; }
+h1 { margin:0; font-size:clamp(22px,3vw,31px); line-height:1.15; letter-spacing:-.02em; }
+.lede { max-width:95ch; margin:10px 0 0; color:var(--muted); }
+.meta { display:flex; flex-wrap:wrap; gap:6px 18px; margin-top:12px; font-size:12px; color:var(--muted); }
+.meta b { color:var(--fg); font-weight:600; }
+.legend-panel { display:flex; flex-wrap:wrap; gap:8px 16px; align-items:center;
+  margin:16px 0 0; padding:10px 12px; border:1px solid var(--border); border-radius:10px;
+  background:var(--panel); font-size:12px; }
+.sym { display:inline-grid; place-items:center; width:20px; height:20px; border-radius:5px;
+  font-weight:800; margin-right:4px; vertical-align:-4px; }
+.m { color:var(--met); background:var(--met-bg); }
+.p { color:var(--partial); background:var(--partial-bg); }
+.g { color:var(--gap); background:var(--gap-bg); }
+.n { color:var(--na); background:var(--na-bg); }
+.u { color:var(--unknown); background:var(--unknown-bg); }
+.controls { display:grid; gap:10px; margin:18px 0 0; }
+.control-row { display:flex; flex-wrap:wrap; gap:8px; align-items:flex-end; }
+label.search { flex:1 1 300px; display:flex; flex-direction:column; gap:4px;
+  font-size:11px; letter-spacing:.04em; text-transform:uppercase; color:var(--muted); font-weight:600; }
+label.select { display:flex; flex-direction:column; gap:4px; font-size:11px; letter-spacing:.04em;
+  text-transform:uppercase; color:var(--muted); font-weight:600; }
+input[type=search], select { font:inherit; font-size:13px; color:var(--fg); background:var(--panel);
+  border:1px solid var(--border-strong); border-radius:8px; padding:8px 10px; min-height:36px; }
+input[type=search]:focus, select:focus, .chip:focus-visible, .btn:focus-visible,
+.sdk-head:focus-visible { outline:2px solid var(--accent); outline-offset:2px; }
+.chips { display:flex; flex-wrap:wrap; gap:6px; align-items:center; }
+.control-label { align-self:center; font-size:11px; letter-spacing:.04em; text-transform:uppercase;
+  color:var(--muted); font-weight:600; }
+.crumb { display:flex; flex-wrap:wrap; gap:4px; align-items:center; margin:0 0 10px; font-size:12px; }
+.crumb[hidden] { display:none; }
+.crumb button { border:0; background:transparent; color:var(--accent); cursor:pointer; font:inherit;
+  padding:3px 5px; border-radius:5px; }
+.crumb button:hover { background:var(--accent-soft); }
+.crumb .current { color:var(--fg); font-weight:700; padding:3px 5px; }
+.crumb .arrow { color:var(--muted); }
+.crumb .crumb-info { color:var(--muted); margin-left:auto; }
+.rollup-row { cursor:default; }
+.rollup-row .cap-cell { cursor:pointer; }
+.rollup-row:hover .path-text { color:var(--accent); }
+.rollup-row:focus-visible { outline:2px solid var(--accent); outline-offset:-2px; }
+.rollup-row .cap-cell:focus-visible { outline:2px solid var(--accent); outline-offset:-3px; }
+.matrix td.cell { cursor:pointer; }
+.matrix td.cell:focus-visible { outline:2px solid var(--accent); outline-offset:-2px; }
+.agg-count { display:block; font-size:9px; font-weight:600; color:var(--muted); line-height:1.1; margin-top:1px; }
+.rollup-row .cell { font-size:13px; }
+
+/* Cell proof modal */
+dialog.cell-modal { padding:0; border:1px solid var(--border-strong); border-radius:14px;
+  background:var(--panel); color:var(--fg); width:min(920px, calc(100vw - 28px));
+  max-height:min(88vh, 920px); box-shadow:0 30px 80px rgba(0,0,0,.4); }
+dialog.cell-modal[open] { display:flex; flex-direction:column; }
+dialog.cell-modal::backdrop { background:rgba(8,12,18,.55); }
+.modal-head { display:flex; justify-content:space-between; align-items:flex-start; gap:16px;
+  padding:16px 20px 12px; border-bottom:1px solid var(--border); }
+.modal-eyebrow { margin:0 0 4px; font-size:10px; letter-spacing:.07em; text-transform:uppercase;
+  color:var(--muted); font-weight:700; }
+.modal-head h2 { font-size:18px; line-height:1.25; }
+.modal-body { padding:16px 20px; overflow:auto; }
+.modal-section { margin-top:18px; }
+.modal-section:first-child { margin-top:0; }
+.modal-section h3 { margin:0 0 8px; font-size:12px; text-transform:uppercase; letter-spacing:.05em;
+  color:var(--muted); }
+.claim-line { display:flex; flex-wrap:wrap; gap:8px; align-items:center; font-size:13px; }
+.claim-path { color:var(--muted); font-size:12px; }
+.status-pill { display:inline-flex; align-items:center; gap:5px; padding:3px 8px; border-radius:999px;
+  font-size:11px; font-weight:700; }
+.proof-value a { overflow-wrap:anywhere; }
+.proof-list { display:grid; gap:7px; margin:0; }
+.proof-row { display:grid; grid-template-columns:140px 1fr; gap:10px; font-size:12px; }
+.proof-term { color:var(--muted); font-weight:600; }
+.proof-value { min-width:0; overflow-wrap:anywhere; }
+.proof-links { display:flex; flex-wrap:wrap; gap:8px 14px; margin-top:10px; font-size:12px; }
+.desc-list { max-height:240px; overflow:auto; margin:0; padding:0; list-style:none;
+  border:1px solid var(--border); border-radius:8px; }
+.desc-list li { display:flex; gap:8px; align-items:baseline; padding:5px 9px;
+  border-bottom:1px solid var(--border); font-size:12px; }
+.desc-list li:last-child { border-bottom:0; }
+.desc-list .desc-status { font-weight:800; width:14px; flex:none; }
+.desc-list .cap-tag { margin-left:auto; color:var(--muted); font-size:9px; letter-spacing:.04em;
+  text-transform:uppercase; white-space:nowrap; }
+.prompt-head { display:flex; justify-content:space-between; align-items:center; gap:10px; }
+.prompt { white-space:pre-wrap; overflow:auto; max-height:260px; margin:8px 0 0; padding:10px 12px;
+  background:var(--panel-2); border:1px solid var(--border); border-radius:8px;
+  font:12px/1.5 ui-monospace,SFMono-Regular,Menlo,Consolas,monospace; }
+.modal-foot { padding:10px 20px; border-top:1px solid var(--border); color:var(--muted); font-size:11px; }
+body.modal-open { overflow:hidden; }
+.chip, .btn { cursor:pointer; border:1px solid var(--border-strong); background:var(--panel);
+  color:var(--fg); border-radius:999px; padding:5px 11px; font:inherit; font-size:12px; line-height:1.2; }
+.chip:hover, .btn:hover { border-color:var(--accent); }
+.chip[aria-pressed=true] { background:var(--accent); border-color:var(--accent); color:var(--on-accent); }
+.btn { border-radius:8px; padding:7px 12px; }
+.btn.ghost { background:transparent; }
+.section-head { display:flex; align-items:baseline; gap:12px; flex-wrap:wrap; margin:24px 0 10px; }
+h2 { margin:0; font-size:15px; letter-spacing:-.01em; }
+.hint, #visible-count { color:var(--muted); font-size:12px; }
+.table-scroll { overflow:auto; border:1px solid var(--border); border-radius:12px;
+  background:var(--panel); box-shadow:var(--shadow); }
+.rollup-table { width:100%; min-width:560px; border-collapse:collapse; font-size:12px; background:var(--panel); }
+.rollup-table th, .rollup-table td { padding:6px 12px; border-bottom:1px solid var(--border); text-align:right; }
+.rollup-table th:first-child, .rollup-table td:first-child { text-align:left; }
+.rollup-table thead th { background:var(--panel-2); color:var(--muted); font-size:10px;
+  text-transform:uppercase; letter-spacing:.05em; }
+.rollup-table tbody tr:last-child td { border-bottom:0; }
+.rollup-table tr.focus td { background:var(--accent-soft); }
+.rollup-table td.m, .rollup-table td.p, .rollup-table td.g,
+.rollup-table td.u, .rollup-table td.n { background:transparent; font-weight:700; }
+.matrix { border-collapse:separate; border-spacing:0; width:100%; min-width:1020px; table-layout:fixed; font-size:13px; }
+.matrix th, .matrix td { border-bottom:1px solid var(--border); padding:8px 10px; vertical-align:top; text-align:left; }
+.matrix thead th { position:sticky; top:0; z-index:6; background:var(--panel-2);
+  font-size:10px; letter-spacing:.04em; text-transform:uppercase; color:var(--muted); white-space:nowrap; }
+.matrix thead th.cap-head { left:0; z-index:8; text-transform:none; font-size:11px; }
+.matrix .cap-cell, .matrix .cap-head { position:sticky; left:0; background:var(--panel); z-index:3;
+  min-width:0; max-width:none; }
+.matrix .cap-head { width:46%; }
+.matrix .sdk-head { width:5.4%; }
+.matrix .cap-cell { font-weight:400; }
+.group-row th { background:var(--panel-2); border-top:2px solid var(--border-strong);
+  padding:9px 12px; font-weight:600; position:static; }
+.matrix tbody:first-of-type .group-row th { border-top:0; }
+.lvl { display:inline-block; font:700 9px/1 ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+  color:var(--muted); background:var(--bg); border:1px solid var(--border); border-radius:4px;
+  padding:2px 4px; margin-right:5px; vertical-align:1px; letter-spacing:.04em; }
+.sep { color:var(--muted); margin:0 7px; }
+.path-text { font-weight:600; }
+.group-count { float:right; color:var(--muted); font-weight:400; font-size:11px; margin-left:12px; }
+.cap-cell .lvl { margin-right:7px; }
+.outcome { display:inline; }
+.outcome code { font:.9em ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+  background:var(--panel-2); border:1px solid var(--border); border-radius:4px; padding:0 3px; }
+.basis { display:block; margin-top:3px; font-size:10px; letter-spacing:.04em; text-transform:uppercase;
+  color:var(--muted); font-weight:600; }
+.cell { text-align:center !important; font-weight:800; font-size:14px; width:52px; min-width:52px;
+  font-variant-numeric:tabular-nums; }
+.sdk-head { text-align:center !important; width:52px; min-width:52px; cursor:pointer; user-select:none; }
+.sdk-head .sdk-name { display:block; font-size:10px; letter-spacing:0; text-transform:none;
+  color:var(--fg); font-weight:700; }
+.sdk-head .sdk-tier { display:block; font-size:9px; color:var(--muted); font-weight:500; }
+.sdk-head.focus { background:var(--accent-soft); box-shadow:inset 0 -2px 0 var(--accent); }
+.cap-row:hover .cap-cell { background:var(--hover); }
+.cap-row:hover .cell { box-shadow:inset 0 0 0 1px var(--border-strong); }
+.empty { margin:0; padding:26px 16px; text-align:center; color:var(--muted); background:var(--panel);
+  border:1px solid var(--border); border-radius:12px; }
+details.derivation { margin:24px 0 8px; padding:12px 14px; border:1px solid var(--border);
+  border-radius:10px; background:var(--panel); font-size:13px; }
+details summary { cursor:pointer; font-weight:600; }
+details ul { margin:8px 0 0 18px; padding:0; }
+details li { margin:4px 0; color:var(--muted); }
+footer { margin-top:26px; padding:18px 0 34px; border-top:1px solid var(--border);
+  color:var(--muted); font-size:12px; }
+@media (max-width:760px) {
+  .wrap { padding:0 12px; }
+  .matrix { min-width:920px; }
+  .matrix .cap-cell, .matrix .cap-head { min-width:290px; }
+  .group-count { display:none; }
+  .proof-row { grid-template-columns:1fr; gap:2px; }
+  .prompt-head { flex-wrap:wrap; }
+  .prompt-head .btn { width:100%; }
+}
+@media print {
+  :root { color-scheme: light; --bg:#fff; --panel:#fff; --panel-2:#f4f4f4; --fg:#000;
+    --muted:#444; --border:#bbb; --border-strong:#999; --accent:#000; --accent-soft:#eee;
+    --met:#000; --met-bg:#fff; --partial:#000; --partial-bg:#fff; --gap:#000; --gap-bg:#fff;
+    --na:#000; --na-bg:#fff; --unknown:#000; --unknown-bg:#fff; --hover:#fff; --shadow:none; }
+  .controls, .rollup, .legend-panel, .page .meta, footer, .skip, .hint, #copy, #reset { display:none !important; }
+  dialog.cell-modal { display:none !important; }
+  .page { padding:0 0 10px; }
+  .table-scroll { overflow:visible; border:0; }
+  .matrix { min-width:0; font-size:9px; }
+  .matrix thead th, .matrix .cap-cell, .matrix .cap-head { position:static; }
+  .matrix .cap-cell { min-width:0; max-width:none; }
+  .cell { width:auto; min-width:0; }
+  th, td { padding:3px 4px !important; }
+}
+</style>
+</head>
+<body>
+<a class="skip" href="#matrix-panel">Skip to matrix</a>
+<header class="page">
+  <div class="wrap">
+    <p class="eyebrow">SEP-3371 · SDK extension points</p>
+    <h1>Capability matrix by hierarchy level and SDK</h1>
+    <p class="lede">
+      All four capability levels from the SEP-3371 hierarchy, with support recorded for every official SDK.
+      Group headers are L1 › L2 › L3; each row is one L4 outcome. Cells inherit the nearest assessed capability
+      row from the SEP's appendices — they are <strong>not</strong> per-leaf conformance results.
+    </p>
+    <div class="meta">
+      <span><b>Spec</b> <a href="https://github.com/modelcontextprotocol/modelcontextprotocol/pull/3371">PR #3371</a> · Draft</span>
+      <span><b>Protocol</b> 2026-07-28 and later</span>
+      <span><b>Assessed</b> Appendix A 2026-09-18 · Appendix D 2026-10-07</span>
+      <span><b>Capabilities</b> <span id="row-total"></span></span>
+      <span><b>Groups</b> <span id="group-total"></span></span>
+    </div>
+  </div>
+</header>
+<main class="wrap">
+  <section class="legend-panel" aria-label="Legend">
+    <span><b class="sym m">✓</b>Met</span>
+    <span><b class="sym p">~</b>Partial or workaround</span>
+    <span><b class="sym g">✕</b>Gap</span>
+    <span><b class="sym u">?</b>Unverified</span>
+    <span><b class="sym n">–</b>Not applicable</span>
+    <span><strong>Roll-up:</strong> a node shows its weakest descendant; the small number is how many descendants are at that status.</span>
+    <span>Symbols carry the meaning; colour is secondary. Hover a cell for its scope and caveats.</span>
+  </section>
+
+  <section class="controls" aria-label="Filters">
+    <div class="control-row">
+      <label class="search"><span>Search capabilities</span>
+        <input id="q" type="search" placeholder="Method, route, dependency, launch…" autocomplete="off">
+      </label>
+      <label class="select"><span>Focus SDK</span>
+        <select id="sdk"><option value="all">All SDKs</option></select>
+      </label>
+      <button id="reset" class="btn ghost" type="button">Reset</button>
+      <button id="copy" class="btn" type="button">Copy view link</button>
+    </div>
+    <div class="control-row">
+      <span class="control-label">View</span>
+      <div class="chips" id="view-chips" role="group" aria-label="View mode">
+        <button class="chip" type="button" data-view="detail" aria-pressed="true">L4 detail</button>
+        <button class="chip" type="button" data-view="rollup" aria-pressed="false">Roll up by level</button>
+      </div>
+    </div>
+    <div class="control-row">
+      <div class="chips" id="l1-chips" role="group" aria-label="Attachment surface"></div>
+      <div class="chips" id="status-chips" role="group" aria-label="Support status"></div>
+    </div>
+  </section>
+
+  <section class="rollup" aria-labelledby="rollup-title">
+    <div class="section-head">
+      <h2 id="rollup-title">Rollup for the current view</h2>
+      <span id="visible-count"></span>
+    </div>
+    <div class="table-scroll">
+      <table class="rollup-table">
+        <thead>
+          <tr><th scope="col">SDK</th><th scope="col">Tier</th><th scope="col">✓ Met</th>
+          <th scope="col">~ Partial</th><th scope="col">✕ Gap</th><th scope="col">? Unverified</th>
+          <th scope="col">– N/A</th></tr>
+        </thead>
+        <tbody id="rollup-body"></tbody>
+      </table>
+    </div>
+  </section>
+
+  <section class="matrix-panel" id="matrix-panel" aria-labelledby="matrix-title">
+    <div class="section-head">
+      <h2 id="matrix-title">Capability hierarchy</h2>
+      <span class="hint">Click an SDK header to focus; click any status cell for proof and copyable prompts. In roll-up view, click a row label to drill down; use the breadcrumb to roll up.</span>
+    </div>
+    <nav id="crumb" class="crumb" aria-label="Rollup scope" hidden></nav>
+    <div class="table-scroll matrix-scroll">
+      <table class="matrix" id="matrix">
+        <thead id="matrix-head"></thead>
+      </table>
+    </div>
+    <p id="empty" class="empty" hidden>No capability matches the current filters.</p>
+  </section>
+
+  <details class="derivation">
+    <summary>How the cells were derived</summary>
+    <ul>
+      <li><strong>Rows:</strong> every L4 outcome in the SEP-3371 capability hierarchy, grouped under its L1, L2 and L3.</li>
+      <li><strong>Cells:</strong> inherited from the capability row the group maps to in the matrix sheet. A leaf does not claim a separate assessment.</li>
+      <li><strong>Coarse ratings:</strong> Appendix A assessed all ten SDKs on 2026-09-18 for public-API presence.</li>
+      <li><strong>Detailed ratings:</strong> Appendix D assessed six SDKs on 2026-10-07. Ruby, PHP, Kotlin and Swift show <code>?</code> where only the coarse rating exists or no assessment was made.</li>
+      <li><strong>Direction:</strong> <code>Partial</code> often means one direction only; hover the cell for the SDK-specific caveat.</li>
+      <li><strong>Roll-up:</strong> L1–L3 views aggregate descendants by worst case; click a row to drill down and the breadcrumb to roll back. The top board counts the currently visible level.</li>
+      <li><strong>Cell proof:</strong> clicking a status cell opens its claim, the inherited assessment basis, and copyable verification and feature-branch prompts. Each prompt walks up from the target through its L1–L3 ancestors and the required extension point before the target behavior. Nothing is cloned or executed.</li>
+      <li><strong>Not conformance:</strong> a ✓ cell can still miss a requirement the row does not isolate. The source matrix and hierarchy live in <code>.workspace-docs/capability-sep-template.md</code>.</li>
+    </ul>
+  </details>
+
+  <section class="matrix-panel" aria-labelledby="impact-title">
+    <div class="section-head">
+      <h2 id="impact-title">Downstream work waiting on the capability</h2>
+      <span class="hint">Observed 2026-10-28. Waiting on the capability, not on this pull request.</span>
+    </div>
+    <p class="lede">SEP-3371 has been open since 2026-09-18 and is still <code>REVIEW_REQUIRED</code> and
+      <code>BLOCKED</code>: 110 inline review comments (59 root, 51 replies, 13 participants) between 2026-09-21 and
+      2026-10-26, while one Standards Track document carries registration and dependencies, custom methods, message
+      interception, transport interception, routes and stdio launch, as <code>MUST</code> for every Tier 1 SDK. The list
+      below is what needs those capabilities.</p>
+    <div class="table-scroll">
+      <table class="rollup-table">
+        <thead>
+          <tr>
+            <th scope="col">Work</th>
+            <th scope="col" style="text-align:left">Capability it needs</th>
+            <th scope="col" style="text-align:left">Observed</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><code>typescript-sdk</code> #2820 — <code>{ id, setup(ctx) }</code> extensions, <code>use</code> middleware</td>
+            <td style="text-align:left">registration, custom methods</td>
+            <td style="text-align:left">opened 2026-09-16; still open 2026-10-27</td>
+          </tr>
+          <tr>
+            <td><code>typescript-sdk</code> #3066 — Skills served through <code>extensions</code></td>
+            <td style="text-align:left">#2820's registration shape</td>
+            <td style="text-align:left">opened 2026-10-22; #3047 merged 2026-10-20 with <code>attach(mcp)</code>, which
+              <code>extensions</code> cannot accept, so the merged extension is reworked</td>
+          </tr>
+          <tr>
+            <td><code>typescript-sdk</code> #2782 — Tasks extension</td>
+            <td style="text-align:left">#3066 → #2820</td>
+            <td style="text-align:left">open since 2026-09-10</td>
+          </tr>
+          <tr>
+            <td><code>experimental-ext-filesystems</code> #1 — Filesystems WG skeleton</td>
+            <td style="text-align:left">SDK extension points</td>
+            <td style="text-align:left">2026-10-09; <code>python/</code> is a placeholder "meant to plug in through the
+              SDK's extension points (SEP-3371)"</td>
+          </tr>
+          <tr>
+            <td><code>experimental-ext-filesystems</code> #2 — Resource operations strawman</td>
+            <td style="text-align:left">same</td>
+            <td style="text-align:left">lists five gaps in the Python SDK's extension points as feedback for SEP-3371</td>
+          </tr>
+          <tr>
+            <td>Server Card extension</td>
+            <td style="text-align:left">transport interception and routes</td>
+            <td style="text-align:left">named by the Core Maintainers meeting as the reason to add transport hooks
+              (PR #3371, 2026-10-07)</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="section-head">
+      <h2>The decomposition we would have used</h2>
+    </div>
+    <ol>
+      <li><strong>Conceptual agreement.</strong> A direction request states the outcome and the non-goals on one page:
+        SDKs need language-agnostic extension points; packaging and stability follow each SDK's policy. No normative
+        text, no tiering.</li>
+      <li><strong>One SEP for the agreed concept.</strong> Semantics and boundaries: what an extension point is, what it
+        must not do, what it must never add to the wire.</li>
+      <li><strong>One SEP per capability.</strong> Registration and dependencies · custom methods · interception
+        (message, then transport) · routes and launch. Each is sponsored, reviewed and landable on its own.</li>
+      <li><strong>Tracking issues in each SDK.</strong> <code>typescript-sdk</code>, <code>python-sdk</code>,
+        <code>go-sdk</code>, <code>csharp-sdk</code>, … each with its own acceptance and sequencing, instead of one
+        MUST set over ten SDKs in a single review.</li>
+    </ol>
+    <p class="lede"><strong>Counterfactual, stated as such:</strong> with the split, registration and dependencies could
+      have reached review without middleware ordering and transport hooks in the same document; a capability missing
+      from one SDK could have been scoped to the SDKs that offer it instead of constraining the shared text; and an
+      extension that shipped early would have had a stable registration target before merge. The SEP may still land as
+      written; the claim is about the order, not the content.</p>
+  </section>
+</main>
+
+<dialog id="cell-modal" class="cell-modal" aria-labelledby="modal-title">
+  <div class="modal-head">
+    <div>
+      <p class="modal-eyebrow" id="modal-eyebrow"></p>
+      <h2 id="modal-title"></h2>
+    </div>
+    <button id="modal-close" class="btn ghost" type="button" aria-label="Close proof dialog">Close</button>
+  </div>
+  <div class="modal-body">
+    <section class="modal-section">
+      <h3>Claim</h3>
+      <p id="modal-claim" class="claim-line"></p>
+    </section>
+    <section class="modal-section">
+      <h3>Proof basis</h3>
+      <div id="modal-proof"></div>
+    </section>
+    <section class="modal-section" id="modal-descendants-section" hidden>
+      <h3>Descendants in this roll-up</h3>
+      <ul id="modal-descendants" class="desc-list"></ul>
+    </section>
+    <section class="modal-section">
+      <div class="prompt-head">
+        <h3>Verification prompt</h3>
+        <button class="btn" type="button" data-copy="verify">Copy verification prompt</button>
+      </div>
+      <pre id="prompt-verify" class="prompt"></pre>
+    </section>
+    <section class="modal-section">
+      <div class="prompt-head">
+        <h3>Feature-branch prompt</h3>
+        <button class="btn" type="button" data-copy="feature">Copy feature prompt</button>
+      </div>
+      <pre id="prompt-feature" class="prompt"></pre>
+    </section>
+  </div>
+  <div class="modal-foot">Prompts are text only. Nothing is cloned, checked out or executed by this page.</div>
+</dialog>
+
+<footer>
+  <div class="wrap">
+    Snapshot of SEP-3371 Appendices A and D; support changes with SDK releases. Protocol scope is 2026-07-28 and later.
+    Rendered from the capability hierarchy in <code>capability-sep-template.md</code>. No network access required.
+  </div>
+</footer>
+<script>
+const DATA = {"sdks":[{"id":"ts","name":"TypeScript","tier":1},{"id":"py","name":"Python","tier":1},{"id":"cs","name":"C#","tier":1},{"id":"go","name":"Go","tier":1},{"id":"rs","name":"Rust","tier":1},{"id":"rb","name":"Ruby","tier":1},{"id":"jv","name":"Java","tier":2},{"id":"php","name":"PHP","tier":3},{"id":"kt","name":"Kotlin","tier":3},{"id":"sw","name":"Swift","tier":3}],"caps":{"registry":{"statuses":["g","m","p","g","g","u","g","m","u","u"],"label":"Extension registry","note":"Enable multiple extensions and reject duplicate identifiers."},"capmap":{"statuses":["m","m","m","m","m","m","g","m","m","g"],"label":"Capability map","note":"Declare identifier and settings; read peer capabilities."},"deps":{"statuses":["g","g","p","g","g","u","g","u","u","u"],"label":"Dependencies","note":"Declare and verify local dependencies before running."},"customReq":{"statuses":["m","m","p","m","p","m","g","m","m","m"],"label":"Custom requests","note":"Register and invoke typed extension requests."},"customNotif":{"statuses":["m","m","m","g","p","u","g","u","u","u"],"label":"Custom notifications","note":"Register, dispatch and send extension notifications."},"checkedReg":{"statuses":["g","p","g","p","g","u","g","u","u","u"],"label":"Checked registration","note":"Reject core or duplicate names and type changes."},"jrpcBoth":{"statuses":["p","p","p","m","p","u","p","g","u","u"],"label":"JSON-RPC interception","note":"Message interception across server and client roles; direction coverage varies."},"streams":{"statuses":["p","p","m","m","p","u","p","u","u","u"],"label":"Per-message streams","note":"Act on each message without buffering."},"typedMw":{"statuses":["g","g","p","p","g","u","p","u","u","u"],"label":"Typed interception","note":"Optional method-scoped typed interception."},"httpServer":{"statuses":["m","m","m","m","m","u","m","u","u","u"],"label":"HTTP server boundary","note":"Inbound HTTP interception and routes."},"httpClient":{"statuses":["m","m","m","m","m","u","m","u","u","u"],"label":"HTTP client boundary","note":"Modify, observe and retry outbound HTTP."},"httpCtx":{"statuses":["p","p","m","p","m","u","m","u","u","u"],"label":"Server identity context","note":"Open local context for any auth scheme."},"ctxBridge":{"statuses":["u","u","u","u","u","u","u","u","u","u"],"label":"Client context bridge","note":"Pass message context to HTTP interception."},"stdioLaunch":{"statuses":["p","p","p","p","p","u","p","u","u","u"],"label":"stdio launch","note":"Contribute env/args and reject conflicts."},"stdioSession":{"statuses":["m","m","m","m","m","u","m","u","u","u"],"label":"stdio session context","note":"Attach local session identity."},"supportSet":{"statuses":["g","g","g","g","g","u","g","u","u","u"],"label":"Support identifiers","note":"Optional runtime support set."},"lifecycle":{"statuses":["u","u","u","u","u","u","u","u","u","u"],"label":"Lifecycle listing","note":"Publicly list installed extensions."},"docPoints":{"statuses":["u","u","u","u","u","u","u","u","u","u"],"label":"Documentation","note":"Document supported extension points and ordering."},"unassessed":{"statuses":["u","u","u","u","u","u","u","u","u","u"],"label":"Not assessed","note":"No official-SDK assessment at this granularity."},"na":{"statuses":["n","n","n","n","n","n","n","n","n","n"],"label":"Not applicable","note":"No SDK support is required for this capability."}},"notes":{"registry":{"cs":"builder extension methods only"},"deps":{"cs":"options validation"},"customReq":{"rb":"requests only"},"customNotif":{"rb":"not verified"},"checkedReg":{"py":"core notification conflicts only warn","go":"duplicate custom handlers replace"},"jrpcBoth":{"ts":"transport wrapping only","py":"server outbound gap","cs":"server filters; client partial","rs":"outbound gap","jv":"wrapping only"},"streams":{"py":"inbound server only"},"typedMw":{"cs":"server only","jv":"tool filters only"},"httpCtx":{"ts":"bearer-shaped AuthInfo","py":"bearer-typed identity","go":"unexported setter"},"stdioLaunch":{"*":"application-owned"},"supportSet":{"*":"not provided"}},"groups":[{"l1":"Transport","l2":"JSON-RPC message flow (every transport)","l3":"Inbound request and notification processing","rows":[{"text":"Wrap processing before and after the downstream step.","cap":"jrpcBoth","scope":"combined server + client"},{"text":"Return a result early without invoking the downstream step.","cap":"jrpcBoth","scope":"combined server + client"},{"text":"Modify or replace a payload, within what the method contract allows, including intermediate results.","cap":"jrpcBoth","scope":"combined server + client"},{"text":"Add, update or remove `_meta` entries, including nested ones; reach downstream consumers; preserve entries the SDK does not recognise.","cap":"jrpcBoth","scope":"combined server + client"},{"text":"Read local context the SDK already exposes: authenticated identity, cancellation, peer capabilities. This context is never serialised.","cap":"jrpcBoth","scope":"combined server + client"},{"text":"Emit a notification during processing, or suppress one where the protocol permits, without ending the operation.","cap":"jrpcBoth","scope":"combined server + client"},{"text":"Observe each message of a multi-message exchange as it is produced or consumed, without buffering the whole exchange.","cap":"streams","scope":"multi-message"},{"text":"Adding interception must not change delivery order, cancellation or error propagation.","cap":"jrpcBoth","scope":"combined server + client"},{"text":"A local configuration failure while handling a request answers with an internal error (`-32603`).","cap":"jrpcBoth","scope":"combined server + client"},{"text":"The same failure on a notification produces no response; it uses the SDK's local error path.","cap":"jrpcBoth","scope":"combined server + client"}]},{"l1":"Transport","l2":"JSON-RPC message flow (every transport)","l3":"Outbound request, response and notification processing","rows":[{"text":"Act on an outgoing message before it is sent.","cap":"jrpcBoth","scope":"combined server + client"},{"text":"Act on the response messages an outgoing request returns, including supported intermediate results.","cap":"jrpcBoth","scope":"combined server + client"},{"text":"An outgoing notification has no response of its own.","cap":"jrpcBoth","scope":"combined server + client"},{"text":"Where the receiving chain already covers outbound messages, a separate sending chain is not required.","cap":"jrpcBoth","scope":"combined server + client"},{"text":"Per-message handling applies without buffering or reordering, and covers protocol messages rather than transport frames.","cap":"streams","scope":"multi-message"}]},{"l1":"Transport","l2":"JSON-RPC message flow (every transport)","l3":"Interception composition and lifecycle","rows":[{"text":"Applications can establish the relative order of interception from application code and from each extension.","cap":"jrpcBoth","scope":"combined server + client"},{"text":"The resulting order is deterministic, tie-breaking included.","cap":"jrpcBoth","scope":"combined server + client"},{"text":"The SDK documents where interception sits relative to parsing, validation, dispatch and serialisation.","cap":"jrpcBoth","scope":"combined server + client"},{"text":"An extension's own interception keeps its declared order.","cap":"jrpcBoth","scope":"combined server + client"},{"text":"An extension cannot remove or reorder another extension's or the application's interception.","cap":"jrpcBoth","scope":"combined server + client"},{"text":"Adding interception does not register a method or declare a capability.","cap":"jrpcBoth","scope":"combined server + client"},{"text":"Sending and receiving may use separate orders.","cap":"jrpcBoth","scope":"combined server + client"},{"text":"Named insertion points may be exposed; where they are, applications can place interception at them.","cap":"jrpcBoth","scope":"combined server + client"},{"text":"Interception ends through normal language cleanup on completion, failure, cancellation or early stop; cleanup the language itself cannot guarantee after cancellation is not required.","cap":"jrpcBoth","scope":"combined server + client"},{"text":"Inspecting order at runtime is optional.","cap":"jrpcBoth","scope":"combined server + client"},{"text":"Method-scoped typed interception is optional and, where offered, composes on the same chain in a documented position.","cap":"typedMw","scope":"optional"}]},{"l1":"Transport","l2":"Streamable HTTP boundary","l3":"Server-side inbound HTTP interception","rows":[{"text":"Run before a message is parsed or accepted.","cap":"httpServer","scope":"server inbound HTTP"},{"text":"Answer the request directly with any status, headers and body, including `401` with `WWW-Authenticate`.","cap":"httpServer","scope":"server inbound HTTP"},{"text":"Read the request method, path and headers, including operation-identifying headers, without parsing the body.","cap":"httpServer","scope":"server inbound HTTP"},{"text":"Fail later stages with an HTTP status and headers while the response has not started, including `403` with `WWW-Authenticate` for step-up.","cap":"httpServer","scope":"server inbound HTTP"},{"text":"Act on headers or status without buffering a streamed response.","cap":"httpServer","scope":"server inbound HTTP"}]},{"l1":"Transport","l2":"Streamable HTTP boundary","l3":"Client-side outbound HTTP interception","rows":[{"text":"Modify every HTTP request the transport sends, headers included, including requests that open or resume streams.","cap":"httpClient","scope":"client outbound HTTP"},{"text":"Observe each response's status and headers.","cap":"httpClient","scope":"client outbound HTTP"},{"text":"Perform asynchronous work, such as obtaining a token, then retry.","cap":"httpClient","scope":"client outbound HTTP"},{"text":"Make additional HTTP requests through the same configured client, with its proxy and TLS settings.","cap":"httpClient","scope":"client outbound HTTP"},{"text":"Act on status and headers without buffering a streamed response.","cap":"httpClient","scope":"client outbound HTTP"}]},{"l1":"Transport","l2":"Streamable HTTP boundary","l3":"Context between layers","rows":[{"text":"On the server, local context attached at the HTTP request is available to message-level interception and handlers.","cap":"httpCtx","scope":"server context"},{"text":"That context is open-ended, not limited to one authentication scheme.","cap":"httpCtx","scope":"server context"},{"text":"On the client, message-level context can be passed to HTTP interception for the request that carries the message.","cap":"ctxBridge","scope":"client to transport"},{"text":"On a stdio server, local session context can be attached with the same availability.","cap":"stdioSession","scope":"stdio session"}]},{"l1":"Transport","l2":"Streamable HTTP boundary","l3":"Composition and failure","rows":[{"text":"Transport interception obeys the same ordering, early-return, cleanup and error rules as message-level interception.","cap":"httpServer","scope":"host composition"},{"text":"Host-framework composition may satisfy these capabilities when the handler and HTTP client are composable units.","cap":"httpServer","scope":"host composition"},{"text":"Transport interception for other transports, including custom ones, is optional.","cap":"httpServer","scope":"host composition"}]},{"l1":"Transport","l2":"stdio process boundary","l3":"Launch configuration","rows":[{"text":"The application can set the server process environment and arguments before it starts.","cap":"stdioLaunch","scope":"client launch"},{"text":"Extensions can contribute environment variables and arguments through registration.","cap":"stdioLaunch","scope":"client launch"},{"text":"Contributions from several extensions combine.","cap":"stdioLaunch","scope":"client launch"},{"text":"Conflicting values produce an error rather than a silent overwrite.","cap":"stdioLaunch","scope":"client launch"}]},{"l1":"Transport","l2":"stdio process boundary","l3":"Raw stdio access (optional)","rows":[{"text":"Hooks on raw stdio frames or the server's standard error stream are optional; message-level interception already sees everything a stdio frame carries.","cap":"na","scope":"optional"}]},{"l1":"Client / server host","l2":"Advertised capability set","l3":"Extension registration","rows":[{"text":"Enable several independently packaged extensions on the same client or server.","cap":"registry","scope":"registration"},{"text":"Reject a duplicate extension identifier.","cap":"registry","scope":"registration"},{"text":"An extension declares its identifier and settings in the peer-visible capability map.","cap":"capmap","scope":"capability map"},{"text":"If any contribution cannot be registered, report an error and never process messages with a partially installed extension.","cap":"registry","scope":"registration"},{"text":"Registration may be limited to configuration time; runtime add/remove is optional.","cap":"registry","scope":"registration"},{"text":"Applications and extension setup code can determine which extensions are registered before messages are processed.","cap":"lifecycle","scope":"lifecycle"},{"text":"Extension code can read the peer's capabilities wherever the SDK already exposes them.","cap":"capmap","scope":"capability map"},{"text":"An extension can configure SDK services, methods or filters separately from host middleware and routes; a setup failure prevents the affected extension from becoming active.","cap":"unassessed","scope":"not assessed"}]},{"l1":"Client / server host","l2":"Local dependency configuration","l3":"Dependency declaration and verification","rows":[{"text":"An extension declares dependencies on local core capabilities and their sub-features, or on other registered extensions.","cap":"deps","scope":"dependencies"},{"text":"Representation and matching rules are the SDK's and extension's choice; a boolean predicate is sufficient.","cap":"deps","scope":"dependencies"},{"text":"A dependency is not unmet merely because it was registered or enabled after the dependent extension.","cap":"deps","scope":"dependencies"},{"text":"Handlers and interception do not run unless dependencies are satisfied by the local configuration applicable to that execution.","cap":"deps","scope":"dependencies"},{"text":"Where the applicable configuration can vary by request, it is re-verified before the extension runs.","cap":"deps","scope":"dependencies"},{"text":"The check neither installs packages nor enables capabilities.","cap":"deps","scope":"dependencies"},{"text":"An unmet dependency produces an error naming the extension and the failed requirement.","cap":"deps","scope":"dependencies"},{"text":"Dependencies are local; they add no wire fields and do not advertise support.","cap":"deps","scope":"dependencies"},{"text":"Dependencies do not determine interception order.","cap":"deps","scope":"dependencies"}]},{"l1":"Client / server host","l2":"Method table","l3":"Custom requests","rows":[{"text":"Register a handler for an extension-defined request method.","cap":"customReq","scope":"custom requests"},{"text":"Registration fixes the method name and its parameter and result contracts.","cap":"customReq","scope":"custom requests"},{"text":"Refuse a name that is a core method or already registered, as request or notification.","cap":"checkedReg","scope":"checked registration"},{"text":"Refuse a registration that would change an already-registered method's types.","cap":"checkedReg","scope":"checked registration"},{"text":"Send an extension-defined request with typed or validated parameters and results.","cap":"customReq","scope":"custom requests"},{"text":"One SDK owns message correlation and the envelope; extensions do not.","cap":"customReq","scope":"custom requests"}]},{"l1":"Client / server host","l2":"Method table","l3":"Custom notifications","rows":[{"text":"Register a handler for an extension-defined notification method.","cap":"customNotif","scope":"custom notifications"},{"text":"Dispatch the notification without producing a response.","cap":"customNotif","scope":"custom notifications"},{"text":"Send an extension-defined notification with typed or validated parameters.","cap":"customNotif","scope":"custom notifications"}]},{"l1":"Client / server host","l2":"Method table","l3":"Behaviour replacement","rows":[{"text":"Existing handler-replacement APIs may remain and may change what a method does within its registered types.","cap":"na","scope":"permitted"}]},{"l1":"Auth","l2":"Client credentials","l3":"Credential attachment","rows":[{"text":"Every HTTP request the transport makes carries the credential, including requests that open or resume streams.","cap":"httpClient","scope":"client HTTP"}]},{"l1":"Auth","l2":"Client credentials","l3":"Challenge handling","rows":[{"text":"Observe authentication and authorization responses, obtain or refresh a credential asynchronously, and retry.","cap":"httpClient","scope":"client HTTP"}]},{"l1":"Auth","l2":"Client credentials","l3":"Metadata and token acquisition","rows":[{"text":"Additional requests for protected-resource metadata, authorization-server metadata or tokens use the same configured client.","cap":"httpClient","scope":"client HTTP"}]},{"l1":"Auth","l2":"Server verification","l3":"Pre-message gate","rows":[{"text":"Verify credentials before any MCP message is accepted or parsed.","cap":"httpServer","scope":"server HTTP"},{"text":"Answer with `401` and `WWW-Authenticate` directly.","cap":"httpServer","scope":"server HTTP"}]},{"l1":"Auth","l2":"Server verification","l3":"Per-operation authorization","rows":[{"text":"Decide scope from the operation method and name headers without parsing the body.","cap":"httpServer","scope":"server HTTP"},{"text":"Answer with `403` and `WWW-Authenticate` for step-up while the response has not started.","cap":"httpServer","scope":"server HTTP"}]},{"l1":"Auth","l2":"Identity propagation","l3":"","rows":[{"text":"On the server, the authenticated identity reaches message-level interception and handlers as open local context, not tied to one scheme.","cap":"httpCtx","scope":"server context"},{"text":"On a stdio server, identity can come from the environment and be attached for the session.","cap":"stdioSession","scope":"stdio session"},{"text":"On the client, message-level context can derive transport headers.","cap":"ctxBridge","scope":"client to transport"}]},{"l1":"Auth","l2":"Capability declaration","l3":"","rows":[{"text":"An extension whose only contribution is transport interception or routes can still declare its capability entry; the entry is advisory before the first successful request.","cap":"capmap","scope":"capability map"}]},{"l1":"External routes","l2":"Route table","l3":"Route contribution","rows":[{"text":"Serve additional HTTP routes for any method, including `OPTIONS`, with full control of status, headers and body.","cap":"httpServer","scope":"routes"},{"text":"Contribute routes beneath the MCP endpoint and at origin-level paths.","cap":"httpServer","scope":"routes"},{"text":"Where the SDK owns routing, reject a route that conflicts with the MCP endpoint or an existing route; where the host owns routing, its conflict handling applies.","cap":"httpServer","scope":"routes"},{"text":"Serve contributed routes without transport interception applying to them.","cap":"httpServer","scope":"routes"},{"text":"Route handlers can read the server's local configuration to generate documents such as a Server Card.","cap":"httpServer","scope":"routes"},{"text":"An extension package can contribute its routes through documented SDK or host composition; setup failure prevents activation.","cap":"httpServer","scope":"routes"}]},{"l1":"SDK-wide obligations","l2":"External package access","l3":"","rows":[{"text":"External packages use the extension points through documented public APIs, with no SDK fork, SDK-owned allowlist or organisation-managed namespace.","cap":"unassessed","scope":"not assessed"}]},{"l1":"SDK-wide obligations","l2":"Requirement scope","l3":"","rows":[{"text":"Requirements target protocol `2026-07-28` and later; SDKs may offer the same points on earlier versions.","cap":"na","scope":"scope"},{"text":"Tier 1 SDKs treat **MUST**/**MUST NOT** as written; other tiers treat them as **SHOULD**/**SHOULD NOT**.","cap":"na","scope":"scope"},{"text":"The addition introduces no wire fields or methods, and no extension-point set is sent to peers.","cap":"na","scope":"scope"},{"text":"Tier 1 enforcement and conformance take effect with the first specification release after the SEP reaches Final.","cap":"na","scope":"scope"}]},{"l1":"SDK-wide obligations","l2":"Stability and compatibility","l3":"","rows":[{"text":"Extension points follow the SDK's existing public API stability and versioning policy; no separate policy is introduced.","cap":"unassessed","scope":"not assessed"},{"text":"An SDK offering sync and async APIs may provide each point once and adapt it, provided a contribution applies to both.","cap":"na","scope":"optional adaptation"},{"text":"SDKs document how to package an extension, declare SDK compatibility and enable it in an application.","cap":"unassessed","scope":"not assessed"}]},{"l1":"SDK-wide obligations","l2":"Advertising support","l3":"","rows":[{"text":"Each supported extension point is documented in one place reachable from the main documentation, with its APIs and ordering rules.","cap":"docPoints","scope":"documentation"},{"text":"A runtime support set is optional; where provided, it uses versioned identifiers, is per role, lists only fully met points, is local only, and ignores unknown identifiers and versions.","cap":"supportSet","scope":"optional runtime API"},{"text":"Identifiers have the form `name@sep-NNNN`; a later SEP that changes a point versions that point, unchanged points keep their versions, versions compare by equality, and new points take new names.","cap":"supportSet","scope":"identifier scheme"},{"text":"Documentation should list supported identifiers with links to their SEPs.","cap":"docPoints","scope":"documentation"}]},{"l1":"SDK-wide obligations","l2":"Security boundaries","l3":"","rows":[{"text":"Extensions run as trusted application code with access to protocol data; registration checks do not sandbox them.","cap":"na","scope":"constraint"},{"text":"Message-level interception does not bypass protocol validation or authorization.","cap":"na","scope":"constraint"},{"text":"Transport interception may see credentials; SDKs document which interception runs before authentication and do not expose credentials inward unless the application passes them as context.","cap":"na","scope":"constraint"},{"text":"Contributed routes can be public; the application decides which to enable.","cap":"na","scope":"constraint"},{"text":"Credentials do not belong in `_meta`.","cap":"na","scope":"constraint"}]}],"source":{"sep":"SEP-3371","assessedA":"2026-09-18","assessedD":"2026-10-07","rows":109,"groups":27}};
+const SYM = { m:'✓', p:'~', g:'✕', n:'–', u:'?' };
+const LABEL = { m:'Met', p:'Partial or workaround', g:'Gap', n:'Not applicable', u:'Unverified' };
+const SDKS = DATA.sdks;
+const INDEX = Object.fromEntries(SDKS.map((s, i) => [s.id, i]));
+const state = { q:'', l1:'all', status:'all', sdk:'all', rollup:false, scope:[] };
+
+const SEP_PR = 'https://github.com/modelcontextprotocol/modelcontextprotocol/pull/3371';
+const SEP_URL = 'https://github.com/sambhav/modelcontextprotocol/blob/sep-sdk-extension-points/seps/3371-sdk-extension-points.md';
+const APPENDIX_A = SEP_URL + '#appendix-a-prior-art-and-sdk-support';
+const APPENDIX_D = SEP_URL + '#appendix-d-implementability-across-sdk-languages';
+const SDK_PROOF = {
+  ts: { repo:'https://github.com/modelcontextprotocol/typescript-sdk', rev:'b022522',
+    summary:'Custom methods replace existing handlers; client middleware wraps HTTP fetch, not MCP messages.',
+    docs:'docs/advanced/custom-methods.md · docs/clients/middleware.md' },
+  py: { repo:'https://github.com/modelcontextprotocol/python-sdk', rev:'91941ed',
+    summary:'Extension registration rejects custom-request conflicts but only warns on core notification conflicts; middleware is provisional and server-side.',
+    docs:'docs/advanced/extensions.md · docs/advanced/middleware.md' },
+  cs: { repo:'https://github.com/modelcontextprotocol/csharp-sdk', rev:'3338e88',
+    summary:'Experimental request registration can override built-ins; filters cover notifications and early returns; no client message filters.',
+    docs:'src/ModelContextProtocol.Core/Server/McpServerOptions.cs · docs/concepts/filters.md' },
+  go: { repo:'https://github.com/modelcontextprotocol/go-sdk', rev:'8dd5d6a',
+    summary:'Registration rejects core names but replaces duplicate custom handlers; middleware uses nested sending and receiving chains.',
+    docs:'mcp/server.go · mcp/client.go' },
+  rs: { repo:'https://github.com/modelcontextprotocol/rust-sdk', rev:'08e0211',
+    summary:'No extension registry; service wrappers handle received calls and both directions need adapters.',
+    docs:'crates/rmcp/src/handler/server.rs · crates/rmcp/src/service.rs' },
+  rb: { repo:'https://github.com/modelcontextprotocol/ruby-sdk', rev:'f22ce86e976be6c71b15c386d5b42c12e5f32ee0',
+    summary:'Registration rejects existing names; extension capabilities exist.',
+    docs:'lib/mcp/server.rb · docs/_extensions/capability-extensions.md' },
+  jv: { repo:'https://github.com/modelcontextprotocol/java-sdk', rev:'73a9a8f',
+    summary:'Public session handler maps allow wrapping; capability records lack extensions; synchronous and Reactor variants.',
+    docs:'mcp-core/src/main/java/io/modelcontextprotocol/spec/McpServerSession.java' },
+  php: { repo:'https://github.com/modelcontextprotocol/php-sdk', rev:'16836d4e9a0f96831789ac6e64d5ec5238d2c833',
+    summary:'Registration permits some built-in overrides; custom handlers replace rather than wrap.',
+    docs:'src/Server/Builder.php · docs/advanced/custom-handlers.md' },
+  kt: { repo:'https://github.com/modelcontextprotocol/kotlin-sdk', rev:'1d04427cff47b31932409b90959869aa2934d680',
+    summary:'Handlers replace existing ones; capability models include extension maps.',
+    docs:'kotlin-sdk-core/src/commonMain/kotlin/io/modelcontextprotocol/kotlin/sdk/shared/Protocol.kt · types/capabilities.kt' },
+  sw: { repo:'https://github.com/modelcontextprotocol/swift-sdk', rev:'a0ae212ebf6eab5f754c3129608bc5557637e605',
+    summary:'Handlers replace methods and append notification handlers; client APIs have no general middleware; capability models lack extensions.',
+    docs:'Sources/MCP/Server/Server.swift · Sources/MCP/Client/Client.swift' }
+};
+const CAP_PROOF = {
+  registry:'Appendix A "Registration and capabilities"; Appendix D "Extension registry, duplicate IDs".',
+  capmap:'Appendix A "Registration and capabilities"; Appendix D "Capability declaration".',
+  deps:'Appendix D "Dependency checks".',
+  customReq:'Appendix A "Custom methods"; Appendix D "Custom requests, typed".',
+  customNotif:'Appendix A "Custom methods"; Appendix D "Custom notifications".',
+  checkedReg:'Appendix D "Checked registration path".',
+  jrpcBoth:'Appendix A "Middleware"; Appendix D "JSON-RPC middleware, server/client".',
+  streams:'Appendix D "Streams without buffering".',
+  typedMw:'Appendix D "Typed middleware (optional)".',
+  httpServer:'Appendix D "HTTP server middleware; routes".',
+  httpClient:'Appendix D "HTTP client modify, observe, retry".',
+  httpCtx:'Appendix D "HTTP server context, any scheme".',
+  ctxBridge:'No appendix row; not assessed.',
+  stdioLaunch:'Appendix D "stdio launch configuration".',
+  stdioSession:'Appendix D "stdio server session context".',
+  supportSet:'Appendix D "Support introspection (optional)".',
+  lifecycle:'No appendix row; derived from the SEP lifecycle requirement.',
+  docPoints:'No appendix row; documentation requirement only.',
+  unassessed:'No appendix row; not assessed.',
+  na:'Not applicable; no SDK support is required.'
+};
+const CAP_SLUG = {
+  registry:'registration', capmap:'capability-map', deps:'dependencies',
+  customReq:'custom-requests', customNotif:'custom-notifications',
+  checkedReg:'checked-registration', jrpcBoth:'jsonrpc-middleware', streams:'streams',
+  typedMw:'typed-middleware', httpServer:'http-routes', httpClient:'client-http-middleware',
+  httpCtx:'server-context', ctxBridge:'client-context', stdioLaunch:'stdio-launch',
+  stdioSession:'stdio-session', supportSet:'support-identifiers', lifecycle:'lifecycle',
+  docPoints:'docs', unassessed:'unassessed', na:'not-applicable'
+};
+const DETAILED_SDKS = new Set(['ts', 'py', 'cs', 'go', 'rs', 'jv']);
+
+const L1_GATES = {
+  'Transport': 'A message transport exists and extensions can attach to its message path through a public API.',
+  'Client / server host': 'A client or server instance accepts extensions at configuration time.',
+  'Auth': 'An HTTP seam and an identity context path exist on the transport.',
+  'External routes': 'An HTTP router or host composition path can serve routes outside MCP message processing.',
+  'SDK-wide obligations': 'The SDK exposes its extension points and support status through public APIs or documentation.'
+};
+const L2_GATES = {
+  'JSON-RPC message flow (every transport)': 'Messages are parsed and dispatched through a path an extension can observe.',
+  'Streamable HTTP boundary': 'The Streamable HTTP transport exposes the request and response before and after JSON-RPC parsing.',
+  'stdio process boundary': 'The client can launch a stdio process and set its environment and arguments before spawn.',
+  'Advertised capability set': 'Extension registration can add an entry to the peer-visible capability map.',
+  'Local dependency configuration': 'The SDK evaluates local dependencies before extension handlers or middleware run.',
+  'Method table': 'The runtime can register and dispatch extension-defined method names.',
+  'Client credentials': 'Outbound HTTP requests are observable or modifiable before send.',
+  'Server verification': 'Inbound HTTP requests can be answered before JSON-RPC processing.',
+  'Identity propagation': 'Transport context can be attached and read during message processing.',
+  'Capability declaration': 'Registration can advertise an extension entry and settings.',
+  'Route table': 'The host or SDK router accepts additional routes and resolves conflicts.',
+  'External package access': 'Extension APIs are public and usable without a fork.',
+  'Requirement scope': 'Protocol version and tier rules are known.',
+  'Stability and compatibility': 'The SDK has a public versioning and compatibility policy.',
+  'Advertising support': 'Support identifiers or documentation can be listed per role.',
+  'Security boundaries': 'Trust and credential handling boundaries are documented.'
+};
+const L3_GATES = {
+  'Inbound request and notification processing': 'A handler or interception seam exists below the typed handler layer.',
+  'Outbound request, response and notification processing': 'An outbound seam can observe requests and their response messages.',
+  'Interception composition and lifecycle': 'Multiple contributions can be ordered and cleaned up deterministically.',
+  'Server-side inbound HTTP interception': 'Inbound HTTP requests can be intercepted before the body is parsed.',
+  'Client-side outbound HTTP interception': 'Outbound HTTP requests can be modified and responses observed.',
+  'Context between layers': 'Local context can flow from transport to message processing.',
+  'Composition and failure': 'Transport interception shares ordering and error semantics with message interception.',
+  'Launch configuration': 'Launch settings are applied before the process starts and can be merged.',
+  'Raw stdio access (optional)': 'Raw frame or stderr hooks are optional and not required for message interception.',
+  'Extension registration': 'An extension object can be enabled at configuration time.',
+  'Dependency declaration and verification': 'Dependencies are declared and checked before execution.',
+  'Custom requests': 'Checked custom request registration and typed invocation exist.',
+  'Custom notifications': 'Custom notification registration and dispatch exist.',
+  'Behaviour replacement': 'An existing replacement path exists for handler behavior within fixed types.',
+  'Credential attachment': 'The HTTP client exposes a request seam before send.',
+  'Challenge handling': 'The HTTP client exposes status and headers and can retry after async work.',
+  'Metadata and token acquisition': 'The configured HTTP client can make additional requests.',
+  'Pre-message gate': 'The server handler can answer before accepting or parsing MCP messages.',
+  'Per-operation authorization': 'Operation headers are readable without parsing the body.',
+  'Route contribution': 'Additional routes can be registered without applying transport interception.'
+};
+const CAP_GATE = {
+  registry:'A public extension registry can enable an extension and reject duplicate identifiers.',
+  capmap:'Registration advertises the identifier and settings in the peer-visible capability map.',
+  deps:'A local dependency declaration is checked before the extension runs.',
+  customReq:'A checked custom request registration and typed send path exists.',
+  customNotif:'A custom notification registration and dispatch path exists.',
+  checkedReg:'Registration rejects core or duplicate method names and type changes.',
+  jrpcBoth:'An extension-facing JSON-RPC interception seam exists for the required direction(s).',
+  streams:'Interception observes each streamed message without buffering.',
+  typedMw:'Optional method-scoped typed interception exists on the same chain.',
+  httpServer:'The server exposes an HTTP seam before JSON-RPC processing and a way to add routes.',
+  httpClient:'The client transport exposes its HTTP request and response seam.',
+  httpCtx:'Transport middleware can attach local identity context readable by message processing.',
+  ctxBridge:'Message-level context can be passed to HTTP interception.',
+  stdioLaunch:'Client stdio launch accepts extension-contributed environment and arguments before spawn.',
+  stdioSession:'A stdio server can attach local session identity.',
+  supportSet:'A public support set or documentation lists the versioned identifiers.',
+  lifecycle:'Registered extensions can be enumerated before messages are processed.',
+  docPoints:'Documentation names each supported extension point and its ordering rules.',
+  unassessed:'The nearest ancestor extension point exists; no finer assessment is recorded.',
+  na:'No SDK capability is required; the ancestor path is the only gate.'
+};
+const CAP_POINT = {
+  registry:'registration@sep-3371', capmap:'registration@sep-3371', deps:'registration@sep-3371',
+  customReq:'custom-methods@sep-3371', customNotif:'custom-methods@sep-3371',
+  checkedReg:'custom-methods@sep-3371', jrpcBoth:'jsonrpc-middleware@sep-3371',
+  streams:'jsonrpc-middleware@sep-3371', typedMw:'typed-middleware@sep-3371',
+  httpServer:'transport-middleware/http@sep-3371 · http-routes@sep-3371',
+  httpClient:'transport-middleware/http@sep-3371', httpCtx:'transport-middleware/http@sep-3371',
+  ctxBridge:'transport-middleware/http@sep-3371', stdioLaunch:'stdio-launch@sep-3371',
+  stdioSession:'registration@sep-3371',
+  supportSet:'none (optional support introspection)', lifecycle:'registration@sep-3371',
+  docPoints:'registration@sep-3371', unassessed:'nearest ancestor identifier', na:'none'
+};
+const POINT_GATE = {
+  'registration@sep-3371': 'The SDK exposes a public extension registration and enable path.',
+  'custom-methods@sep-3371': 'The SDK exposes checked custom request and notification registration.',
+  'jsonrpc-middleware@sep-3371': 'The SDK exposes JSON-RPC interception for the required direction(s).',
+  'typed-middleware@sep-3371': 'The SDK optionally exposes method-scoped typed interception.',
+  'transport-middleware/http@sep-3371': 'The transport exposes HTTP request and response seams.',
+  'http-routes@sep-3371': 'The host or SDK exposes an additional-route surface.',
+  'stdio-launch@sep-3371': 'The client stdio launch accepts contributed environment and arguments.'
+};
+function ancestorPoints(ctx) {
+  const [l1, l2, l3] = ctx.pathParts || [];
+  const points = [];
+  if (l1 === 'Client / server host' || l1 === 'SDK-wide obligations') points.push('registration@sep-3371');
+  if (l1 === 'Transport') {
+    if (l2 === 'JSON-RPC message flow (every transport)') points.push('jsonrpc-middleware@sep-3371');
+    else if (l2 === 'Streamable HTTP boundary') points.push('transport-middleware/http@sep-3371');
+    else if (l2 === 'stdio process boundary') points.push('stdio-launch@sep-3371');
+    else points.push('registration@sep-3371');
+  }
+  if (l1 === 'Auth') points.push('transport-middleware/http@sep-3371');
+  if (l1 === 'External routes') points.push('http-routes@sep-3371');
+  if (l2 === 'Method table') points.push('custom-methods@sep-3371');
+  if (l3 === 'Server-side inbound HTTP interception' || l3 === 'Client-side outbound HTTP interception') {
+    points.push('transport-middleware/http@sep-3371');
+  }
+  if (l3 === 'Route contribution') points.push('http-routes@sep-3371');
+  if (l3 === 'Launch configuration') points.push('stdio-launch@sep-3371');
+  return [...new Set(points)];
+}
+
+const $ = id => document.getElementById(id);
+const matrix = $('matrix');
+const matrixHead = $('matrix-head');
+const empty = $('empty');
+const crumb = $('crumb');
+
+function el(tag, cls, text) {
+  const node = document.createElement(tag);
+  if (cls) node.className = cls;
+  if (text !== undefined) node.textContent = text;
+  return node;
+}
+function badge(level) { return el('span', 'lvl', level); }
+function appendInline(parent, text) {
+  text.split('`').forEach((part, i) => {
+    if (!part) return;
+    if (i % 2 === 1) parent.append(el('code', '', part));
+    else parent.append(document.createTextNode(part));
+  });
+}
+const pathOf = row => [row.l1, row.l2, row.l3];
+const inScope = row => state.scope.every((label, i) => pathOf(row)[i] === label);
+
+document.getElementById('row-total').textContent = DATA.source.rows;
+document.getElementById('group-total').textContent = DATA.source.groups;
+
+/* Header */
+const htr = document.createElement('tr');
+const capHead = el('th', 'cap-head', 'Capability · L4 outcome');
+capHead.scope = 'col';
+htr.append(capHead);
+SDKS.forEach(sdk => {
+  const th = el('th', 'sdk-head');
+  th.scope = 'col';
+  th.tabIndex = 0;
+  th.setAttribute('role', 'button');
+  th.dataset.sdk = sdk.id;
+  th.title = sdk.name + ' — Tier ' + sdk.tier + '. Click to focus.';
+  th.append(el('span', 'sdk-name', sdk.name), el('span', 'sdk-tier', 'T' + sdk.tier));
+  const focus = () => {
+    const select = $('sdk');
+    select.value = select.value === sdk.id ? 'all' : sdk.id;
+    select.dispatchEvent(new Event('change'));
+  };
+  th.addEventListener('click', focus);
+  th.addEventListener('keydown', event => {
+    if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); focus(); }
+  });
+  htr.append(th);
+});
+matrixHead.append(htr);
+
+/* Detail table */
+const rowRecords = [];
+const detailGroups = [];
+
+function statusCell(sdk, index, cap, note, onOpen) {
+  const status = cap.statuses[index] || 'u';
+  const td = el('td', 'cell ' + status, SYM[status]);
+  td.dataset.sdk = sdk.id;
+  td.tabIndex = 0;
+  td.setAttribute('role', 'button');
+  const label = sdk.name + ': ' + LABEL[status] + (note ? ' — ' + note : '') +
+    '. ' + cap.label + ': ' + cap.note + '. Click for proof and prompts.';
+  td.title = label;
+  td.setAttribute('aria-label', label);
+  td.addEventListener('click', event => { event.stopPropagation(); onOpen(); });
+  td.addEventListener('keydown', event => {
+    if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); onOpen(); }
+  });
+  return td;
+}
+
+DATA.groups.forEach(group => {
+  const tbody = el('tbody', 'group');
+  const gtr = document.createElement('tr');
+  gtr.className = 'group-row';
+  const gth = document.createElement('th');
+  gth.scope = 'colgroup';
+  gth.colSpan = SDKS.length + 1;
+  const parts = [[group.l1, 'L1'], [group.l2, 'L2'], [group.l3, 'L3']].filter(p => p[0]);
+  parts.forEach(([text, level], i) => {
+    if (i) gth.append(el('span', 'sep', '›'));
+    gth.append(badge(level), el('span', 'path-text', text));
+  });
+  gth.append(el('span', 'group-count', group.rows.length + ' outcomes'));
+  gtr.append(gth);
+  tbody.append(gtr);
+
+  const records = [];
+  group.rows.forEach(row => {
+    const cap = DATA.caps[row.cap];
+    const tr = document.createElement('tr');
+    tr.className = 'cap-row';
+    const th = document.createElement('th');
+    th.scope = 'row';
+    th.className = 'cap-cell';
+    th.title = 'Cells inherit: ' + cap.label + ' — ' + cap.note;
+    const outcome = el('span', 'outcome');
+    appendInline(outcome, row.text);
+    th.append(badge('L4'), outcome, el('span', 'basis', 'Basis: ' + cap.label));
+    tr.append(th);
+
+    const notes = DATA.notes[row.cap] || {};
+    const record = {
+      l1: group.l1, l2: group.l2, l3: group.l3, text: row.text, cap: row.cap,
+      statuses: cap.statuses,
+      haystack: (group.l1 + ' ' + group.l2 + ' ' + group.l3 + ' ' + row.text).toLowerCase(),
+      el: tr
+    };
+    SDKS.forEach((sdk, i) => {
+      tr.append(statusCell(sdk, i, cap, notes[sdk.id] || notes['*'] || '',
+        () => openDetailCell(i, record)));
+    });
+
+    tbody.append(tr);
+    rowRecords.push(record);
+    records.push(record);
+  });
+  matrix.append(tbody);
+  detailGroups.push({ tbody, rows: records });
+});
+
+/* Chips */
+const l1Values = [...new Set(DATA.groups.map(g => g.l1))];
+const l1Chips = $('l1-chips');
+const statusChips = $('status-chips');
+const STATUSES = [['all', 'All statuses'], ['m', '✓ Met'], ['p', '~ Partial'], ['g', '✕ Gap'], ['u', '? Unverified']];
+
+function chip(label, value, group, key) {
+  const button = el('button', 'chip', label);
+  button.type = 'button';
+  button.dataset.value = value;
+  button.setAttribute('aria-pressed', 'false');
+  button.addEventListener('click', () => {
+    state[key] = value;
+    if (key === 'l1' && state.rollup && state.scope.length && value !== 'all' && state.scope[0] !== value) {
+      state.scope = [];
+    }
+    paintChips();
+    apply();
+    syncHash();
+  });
+  group.append(button);
+}
+chip('All surfaces', 'all', l1Chips, 'l1');
+l1Values.forEach(value => chip(value, value, l1Chips, 'l1'));
+STATUSES.forEach(([value, label]) => chip(label, value, statusChips, 'status'));
+
+function paintChips() {
+  l1Chips.querySelectorAll('.chip').forEach(c => c.setAttribute('aria-pressed', String(c.dataset.value === state.l1)));
+  statusChips.querySelectorAll('.chip').forEach(c => c.setAttribute('aria-pressed', String(c.dataset.value === state.status)));
+  document.querySelectorAll('#view-chips .chip').forEach(c =>
+    c.setAttribute('aria-pressed', String((c.dataset.view === 'rollup') === state.rollup)));
+}
+
+/* SDK select */
+const sdkSelect = $('sdk');
+SDKS.forEach(sdk => {
+  const option = document.createElement('option');
+  option.value = sdk.id;
+  option.textContent = sdk.name + ' (T' + sdk.tier + ')';
+  sdkSelect.append(option);
+});
+
+/* Rollup helpers */
+function worstStatus(list) {
+  if (list.includes('g')) return 'g';
+  if (list.includes('p')) return 'p';
+  if (list.includes('u')) return 'u';
+  if (list.includes('m')) return 'm';
+  return 'n';
+}
+function countStatuses(list) {
+  const counts = { m:0, p:0, g:0, u:0, n:0, total:list.length };
+  list.forEach(status => { counts[status] += 1; });
+  return counts;
+}
+function nodeLabel(node, level) {
+  const last = node.path[level - 1];
+  if (last) return last;
+  return (node.path[level - 2] || 'Direct') + ' (direct)';
+}
+function clearRollupBodies() {
+  matrix.querySelectorAll('tbody.rollup-body').forEach(tbody => tbody.remove());
+}
+function statusMatch(statuses) {
+  if (state.status === 'all') return true;
+  if (state.sdk !== 'all') return statuses[INDEX[state.sdk]] === state.status;
+  return statuses.includes(state.status);
+}
+function baseMatch(row) {
+  if (state.l1 !== 'all' && row.l1 !== state.l1) return false;
+  if (state.q && !row.haystack.includes(state.q)) return false;
+  if (state.rollup && !inScope(row)) return false;
+  return true;
+}
+
+function applyDetail() {
+  clearRollupBodies();
+  let shown = 0;
+  let total = 0;
+  const items = [];
+  rowRecords.forEach(row => {
+    const base = baseMatch(row);
+    if (base) total += 1;
+    const ok = base && statusMatch(row.statuses);
+    row.el.hidden = !ok;
+    if (ok) { shown += 1; items.push(row); }
+  });
+  detailGroups.forEach(group => {
+    group.tbody.hidden = !group.rows.some(row => !row.el.hidden);
+  });
+  return { shown, total, items, level: 4 };
+}
+
+function applyRollup() {
+  detailGroups.forEach(group => { group.tbody.hidden = true; });
+  clearRollupBodies();
+
+  const level = state.scope.length + 1;
+  const source = rowRecords.filter(baseMatch);
+  const map = new Map();
+  source.forEach(row => {
+    const path = pathOf(row).slice(0, level);
+    const key = path.join('\u0000');
+    let node = map.get(key);
+    if (!node) { node = { path, rows: [] }; map.set(key, node); }
+    node.rows.push(row);
+  });
+
+  const nodes = [...map.values()];
+  nodes.forEach(node => {
+    node.statuses = SDKS.map((_, i) => worstStatus(node.rows.map(row => row.statuses[i])));
+    node.counts = SDKS.map((_, i) => countStatuses(node.rows.map(row => row.statuses[i])));
+  });
+
+  const items = nodes.filter(node => statusMatch(node.statuses));
+  const tbody = el('tbody', 'rollup-body');
+  items.forEach(node => tbody.append(aggregateRow(node, level)));
+  matrix.append(tbody);
+  return { shown: items.length, total: nodes.length, items, level };
+}
+
+function aggregateRow(node, level) {
+  const label = nodeLabel(node, level);
+  const tr = el('tr', 'cap-row rollup-row');
+  const th = el('th', 'cap-cell');
+  th.scope = 'row';
+  th.tabIndex = 0;
+  th.setAttribute('role', 'button');
+  th.setAttribute('aria-label', 'Roll down into ' + label);
+  th.title = 'Roll down into ' + label;
+  th.append(
+    badge('L' + level),
+    el('span', 'path-text', label),
+    el('span', 'basis', node.rows.length + ' outcomes · click to roll down')
+  );
+  tr.append(th);
+
+  SDKS.forEach((sdk, i) => {
+    const status = node.statuses[i];
+    const counts = node.counts[i];
+    const td = el('td', 'cell ' + status);
+    td.dataset.sdk = sdk.id;
+    td.tabIndex = 0;
+    td.setAttribute('role', 'button');
+    td.append(el('span', 'agg-sym', SYM[status]),
+      el('span', 'agg-count', counts[status] + '/' + counts.total));
+    td.title = sdk.name + ': ' + LABEL[status] + ' (worst case) — ' +
+      counts.m + ' met, ' + counts.p + ' partial, ' + counts.g + ' gap, ' +
+      counts.u + ' unverified, ' + counts.n + ' n/a of ' + counts.total +
+      '. Click for proof and prompts.';
+    td.setAttribute('aria-label', td.title);
+    const open = event => { event.stopPropagation(); openAggregateCell(i, node, level); };
+    td.addEventListener('click', open);
+    td.addEventListener('keydown', event => {
+      if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); open(event); }
+    });
+    tr.append(td);
+  });
+
+  const drill = () => {
+    state.scope = node.path.slice();
+    apply();
+    syncHash();
+  };
+  th.addEventListener('click', drill);
+  th.addEventListener('keydown', event => {
+    if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); drill(); }
+  });
+  return tr;
+}
+
+/* Cell proof modal */
+function proofRow(term, value) {
+  const row = el('div', 'proof-row');
+  row.append(el('span', 'proof-term', term), el('span', 'proof-value', value));
+  return row;
+}
+function proofLink(text, href) {
+  const a = el('a', '', text);
+  a.href = href;
+  a.target = '_blank';
+  a.rel = 'noreferrer';
+  return a;
+}
+function openDetailCell(sdkIndex, row) {
+  const sdk = SDKS[sdkIndex];
+  const cap = DATA.caps[row.cap];
+  const note = (DATA.notes[row.cap] || {})[sdk.id] || (DATA.notes[row.cap] || {})['*'] || '';
+  showCellModal({
+    sdk, status: row.statuses[sdkIndex], level: 4,
+    title: cap.label,
+    path: [row.l1, row.l2, row.l3].filter(Boolean).join(' › '),
+    pathParts: [row.l1, row.l2, row.l3 || (row.l2 + ' (direct)')],
+    requirement: row.text,
+    capIds: [row.cap],
+    rows: [{ text: row.text, capId: row.cap, status: row.statuses[sdkIndex] }],
+    note, rollup: false
+  });
+}
+function openAggregateCell(sdkIndex, node, level) {
+  const sdk = SDKS[sdkIndex];
+  const label = nodeLabel(node, level);
+  const rows = node.rows.map(row => ({
+    text: row.text, capId: row.cap, status: row.statuses[sdkIndex]
+  }));
+  showCellModal({
+    sdk, status: node.statuses[sdkIndex], level,
+    title: label + ' · L' + level + ' roll-up',
+    targetLabel: label,
+    path: node.path.filter(Boolean).join(' › '),
+    pathParts: node.path.map((part, i) => part || (i === 2 ? nodeLabel(node, 3) : 'direct')),
+    requirement: 'Worst-case roll-up of ' + rows.length + ' capabilities under ' + label + '.',
+    capIds: [...new Set(rows.map(row => row.capId))],
+    rows, note: '', rollup: true
+  });
+}
+function showCellModal(ctx) {
+  const modal = $('cell-modal');
+  const sdk = ctx.sdk;
+  const source = SDK_PROOF[sdk.id];
+
+  $('modal-eyebrow').textContent = 'Capability proof · ' + sdk.name + ' · Tier ' + sdk.tier;
+  $('modal-title').textContent = ctx.title;
+
+  const claim = $('modal-claim');
+  claim.replaceChildren();
+  const pill = el('span', 'status-pill ' + ctx.status, SYM[ctx.status] + ' ' + LABEL[ctx.status]);
+  claim.append(pill, ' ');
+  if (ctx.path) claim.append(el('span', 'claim-path', ctx.path), ' — ');
+  claim.append(el('span', '', ctx.requirement));
+
+  const proof = $('modal-proof');
+  proof.replaceChildren();
+  const list = el('dl', 'proof-list');
+  const capProofs = [...new Set(ctx.capIds.map(id =>
+    CAP_PROOF[id] || ('Inherited from ' + (DATA.caps[id] ? DATA.caps[id].label : id) + '.')))];
+  const detailed = DETAILED_SDKS.has(sdk.id);
+  list.append(proofRow('Assessment row',
+    detailed
+      ? capProofs.slice(0, 3).join(' ') + (capProofs.length > 3 ? ' (+' + (capProofs.length - 3) + ' more rows)' : '')
+      : 'No detailed Appendix D assessment; only coarse Appendix A evidence, where available.'));
+  list.append(proofRow('SDK evidence', source.summary));
+  if (ctx.note) list.append(proofRow('SDK caveat', ctx.note));
+  list.append(proofRow('Proof type',
+    ctx.rollup ? 'Worst-case roll-up; each descendant inherits its own assessed row.'
+      : 'Inherited from the assessed capability row, not a source-code audit.'));
+  proof.append(list);
+
+  const links = el('div', 'proof-links');
+  links.append(
+    proofLink('SEP text (PR head)', APPENDIX_A),
+    proofLink('Appendix D', APPENDIX_D),
+    proofLink('PR #3371', SEP_PR),
+    proofLink(sdk.name + ' @ ' + source.rev, source.repo + '/tree/' + source.rev)
+  );
+  proof.append(links);
+  proof.append(proofRow('Evidence paths', source.docs));
+
+  const descSection = $('modal-descendants-section');
+  const descList = $('modal-descendants');
+  descList.replaceChildren();
+  if (ctx.rollup) {
+    descSection.hidden = false;
+    ctx.rows.forEach(row => {
+      const item = el('li');
+      const status = el('span', 'desc-status ' + row.status, SYM[row.status]);
+      status.title = LABEL[row.status];
+      item.append(status, el('span', '', row.text),
+        el('span', 'cap-tag', DATA.caps[row.capId] ? DATA.caps[row.capId].label : row.capId));
+      descList.append(item);
+    });
+  } else {
+    descSection.hidden = true;
+  }
+
+  $('prompt-verify').textContent = verifyPrompt(ctx);
+  $('prompt-feature').textContent = featurePrompt(ctx);
+
+  document.body.classList.add('modal-open');
+  if (!modal.open) {
+    if (typeof modal.showModal === 'function') modal.showModal();
+    else modal.setAttribute('open', '');
+  }
+  $('modal-close').focus();
+}
+
+function gatesFor(ctx) {
+  const parts = ctx.pathParts || [];
+  const gates = [];
+  for (let i = 0; i < Math.min(parts.length, ctx.level - 1); i++) {
+    const label = parts[i];
+    const map = i === 0 ? L1_GATES : i === 1 ? L2_GATES : L3_GATES;
+    let condition = map[label];
+    if (!condition && i === 2 && label.endsWith(' (direct)')) {
+      condition = 'This group has direct outcomes under its L2 parent; no separate L3 function is required.';
+    }
+    gates.push({
+      level: 'L' + (i + 1),
+      label,
+      condition: condition || 'The surface exists and is reachable through public configuration.'
+    });
+  }
+  if (ctx.rollup) {
+    ancestorPoints(ctx).forEach(point => {
+      gates.push({
+        level: 'Extension point',
+        label: point,
+        condition: POINT_GATE[point] || 'The extension point exists and is reachable through public APIs.'
+      });
+    });
+  } else {
+    const pointConditions = new Map();
+    ctx.capIds.forEach(id => {
+      const pointText = CAP_POINT[id] || '';
+      if (!pointText || pointText.startsWith('none') || !pointText.includes('@')) return;
+      pointText.split(' · ').forEach(point => {
+        if (!point.includes('@')) return;
+        const condition = (id === 'httpServer' && POINT_GATE[point])
+          ? POINT_GATE[point]
+          : (CAP_GATE[id] || CAP_GATE.unassessed);
+        if (!pointConditions.has(point)) pointConditions.set(point, []);
+        const conditions = pointConditions.get(point);
+        if (!conditions.includes(condition)) conditions.push(condition);
+      });
+    });
+    pointConditions.forEach((conditions, point) => {
+      gates.push({ level: 'Extension point', label: point, condition: conditions.join(' ') });
+    });
+  }
+  if (ctx.rollup) {
+    gates.push({
+      level: 'L' + ctx.level,
+      label: ctx.targetLabel || ctx.title,
+      condition: 'Every descendant below this node meets its own requirement; the worst-case aggregate is the honest claim.'
+    });
+  } else {
+    gates.push({
+      level: 'L4',
+      label: ctx.requirement,
+      condition: 'The exact behavior is observable; support for an ancestor surface does not imply it.'
+    });
+  }
+  return gates;
+}
+function gateLines(gates) {
+  return gates.map((gate, i) =>
+    '  ' + (i + 1) + '. ' + gate.level + ' — ' + gate.label + '\n     Gate: ' + gate.condition);
+}
+
+function verifyPrompt(ctx) {
+  const sdk = ctx.sdk;
+  const source = SDK_PROOF[sdk.id];
+  const lines = [
+    'Verify ' + sdk.name + ' (Tier ' + sdk.tier + ') support for a SEP-3371 capability.',
+    '',
+    'Repository: ' + source.repo,
+    'Revision:   ' + source.rev,
+    'Setup:',
+    '  git clone ' + source.repo + '.git sep-3371-' + sdk.id,
+    '  cd sep-3371-' + sdk.id,
+    '  git checkout ' + source.rev,
+    '',
+    'Capability path:',
+    '  ' + (ctx.path || ctx.title),
+    '',
+    'Requirement:',
+    '  ' + ctx.requirement,
+    '',
+    'Prerequisite walk-up (target → attachment; verify in dependency order L1 → target, stopping at the first unmet gate):',
+    ...gateLines(gatesFor(ctx)),
+    '',
+    'Ancestor and extension-point support are necessary, not sufficient: an L1–L3 gate does not prove the target behavior.',
+    '',
+    'Claimed status: ' + LABEL[ctx.status],
+    'Proof basis:   ' + (DETAILED_SDKS.has(sdk.id)
+      ? ctx.capIds.map(id => CAP_PROOF[id] || DATA.caps[id].label).join(' ')
+      : 'Coarse Appendix A evidence only; Appendix D did not assess this SDK.'),
+    'SDK evidence:  ' + source.summary
+  ];
+  if (ctx.note) lines.push('SDK caveat:    ' + ctx.note);
+  lines.push('Assessment:    SEP-3371 Appendix A (2026-09-18) and Appendix D (2026-10-07)' +
+    (DETAILED_SDKS.has(sdk.id) ? '' : '; Appendix D did not assess this SDK, so only the coarse Appendix A rating applies'),
+    'SEP text:      ' + SEP_URL,
+    'PR:            ' + SEP_PR, '');
+  if (ctx.rollup) {
+    lines.push('Descendants in this roll-up (current status for ' + sdk.name + '):');
+    ctx.rows.forEach(row => {
+      lines.push('  [' + SYM[row.status] + '] ' + row.text + ' — ' + LABEL[row.status] +
+        ' (' + (DATA.caps[row.capId] ? DATA.caps[row.capId].label : row.capId) + ')');
+    });
+    lines.push('');
+  }
+  if (ctx.status === 'n') {
+    lines.push(
+      'Task:',
+      '  0. Verify the prerequisite chain only. This capability is not applicable: the SEP assigns no SDK support requirement here.',
+      '  1. Report why it is not applicable and stop. Do not claim a gap or propose a branch.'
+    );
+    return lines.join('\n');
+  }
+  lines.push(
+    'Task:',
+    '  0. Verify the prerequisite chain first. If a gate is unmet, report it as the blocking prerequisite and stop; do not claim the target behavior.',
+    '  1. Locate the public API(s) and documentation that implement or expose this capability.',
+    '  2. Decide met / partial / gap. For partial, name the missing role, direction or scope.',
+    '  3. Run a minimal check or test that demonstrates the behaviour; record the exact command and output.',
+    '  4. Report the verdict, files and symbols, evidence, and what would change it.',
+    'Do not modify the repository or create commits.'
+  );
+  return lines.join('\n');
+}
+
+function featurePrompt(ctx) {
+  const sdk = ctx.sdk;
+  const source = SDK_PROOF[sdk.id];
+  if (ctx.status === 'n') {
+    return [
+      'No feature branch is needed for ' + sdk.name + '.',
+      '',
+      'Capability path: ' + (ctx.path || ctx.title),
+      'Claim: ' + LABEL[ctx.status],
+      'Reason: the SEP assigns no SDK support requirement to this capability; it is a constraint or optional behaviour.',
+      '',
+      'Prerequisite walk-up (target → attachment):',
+      ...gateLines(gatesFor(ctx)),
+      '',
+      'Action: verify the chain only. Do not implement or open a branch unless you can show the cell is misclassified.'
+    ].join('\n');
+  }
+  const gaps = ctx.rows.filter(row => row.status !== 'm' && row.status !== 'n');
+  const base = ctx.capIds.length === 1
+    ? (CAP_SLUG[ctx.capIds[0]] || ctx.capIds[0])
+    : (ctx.title.split(' · ')[0] || 'level-' + ctx.level);
+  const slug = ('sep-3371-' + sdk.id + '-' + base).toLowerCase().replace(/[^a-z0-9-]+/g, '-');
+  const prefix = gaps.length ? 'feat' : 'test';
+  const branch = prefix + '/' + slug;
+  const requirementWord = sdk.tier === 1 ? 'MUST' : 'SHOULD';
+
+  const lines = [
+    (gaps.length ? 'Implement missing' : 'Lock in') + ' SEP-3371 extension-point support in ' + sdk.name + '.',
+    '',
+    'Repository: ' + source.repo,
+    'Revision:   ' + source.rev,
+    'Branch:',
+    '  git clone ' + source.repo + '.git sep-3371-' + sdk.id,
+    '  cd sep-3371-' + sdk.id,
+    '  git checkout ' + source.rev,
+    '  git switch -c ' + branch,
+    '',
+    'Capability path:',
+    '  ' + (ctx.path || ctx.title),
+    '',
+    'Current claim: ' + LABEL[ctx.status],
+    'Requirement:',
+    '  ' + ctx.requirement,
+    '',
+    'Prerequisite walk-up (target → attachment; implement in dependency order L1 → target):',
+    ...gateLines(gatesFor(ctx)),
+    ''
+  ];
+  if (gaps.length) {
+    lines.push('Gaps to close:');
+    gaps.forEach(row => {
+      lines.push('  [' + SYM[row.status] + '] ' + row.text + ' — ' + LABEL[row.status] +
+        ' (' + (DATA.caps[row.capId] ? DATA.caps[row.capId].label : row.capId) + ')');
+    });
+  } else {
+    lines.push('The claimed status is ' + LABEL[ctx.status] +
+      '; add a conformance test that fails if this capability regresses.');
+  }
+  lines.push('',
+    'Constraints:',
+    '  - Public API only; no SDK fork, SDK-owned allowlist, or organisation-managed namespace.',
+    '  - Target protocol 2026-07-28 and later; add no wire fields or methods.',
+    '  - Tier ' + sdk.tier + ': treat SEP MUST as ' + requirementWord + '.',
+    '  - Follow the SDK\'s existing public API stability policy, style, tests, docs and changelog.',
+    '  - One capability per branch; keep the diff minimal.',
+    '',
+    'Deliver:'
+  );
+  if (gaps.length) {
+    lines.push(
+      '  1. The extension point (or extension package entry) with typed or validated values where the language allows.',
+      '  2. An end-to-end test that exercises the capability the way an extension author would.',
+      '  3. Documentation for extension authors and the capability advertisement.',
+      '  4. A changeset or changelog entry if the repository uses one.',
+      '  5. Report: files changed, commands run, test output, and residual gaps.'
+    );
+  } else {
+    lines.push(
+      '  1. An end-to-end conformance test that fails if the claimed capability regresses.',
+      '  2. Documentation only if the capability or its ordering rules are not already documented.',
+      '  3. A changeset or changelog entry if the repository uses one.',
+      '  4. Report: files changed, commands run, and test output.'
+    );
+  }
+  return lines.join('\n');
+}
+
+async function copyText(text) {
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    try { await navigator.clipboard.writeText(text); return; } catch {}
+  }
+  const area = document.createElement('textarea');
+  area.value = text;
+  document.body.append(area);
+  area.select();
+  try { document.execCommand('copy'); } catch {}
+  area.remove();
+}
+
+document.querySelectorAll('#cell-modal [data-copy]').forEach(button => {
+  button.addEventListener('click', async () => {
+    const target = $('prompt-' + button.dataset.copy);
+    await copyText(target.textContent);
+    const previous = button.textContent;
+    button.textContent = 'Copied';
+    setTimeout(() => { button.textContent = previous; }, 1400);
+  });
+});
+const cellModal = $('cell-modal');
+const closeCellModal = () => {
+  if (cellModal.open) cellModal.close();
+  document.body.classList.remove('modal-open');
+};
+$('modal-close').addEventListener('click', closeCellModal);
+cellModal.addEventListener('click', event => {
+  if (event.target === cellModal) closeCellModal();
+});
+cellModal.addEventListener('close', () => document.body.classList.remove('modal-open'));
+cellModal.addEventListener('cancel', () => document.body.classList.remove('modal-open'));
+
+/* Breadcrumb */
+function renderCrumb() {
+  crumb.replaceChildren();
+  if (!state.rollup) { crumb.hidden = true; return; }
+  crumb.hidden = false;
+
+  const addButton = (label, scope) => {
+    const button = el('button', '', label);
+    button.type = 'button';
+    button.addEventListener('click', () => {
+      state.scope = scope;
+      apply();
+      syncHash();
+    });
+    crumb.append(button);
+  };
+
+  addButton('All capabilities', []);
+  state.scope.forEach((label, i) => {
+    crumb.append(el('span', 'arrow', '›'));
+    const prefix = state.scope.slice(0, i + 1);
+    const display = label || 'direct';
+    if (i === state.scope.length - 1) {
+      const current = el('span', 'current', display);
+      current.setAttribute('aria-current', 'page');
+      crumb.append(current);
+    } else {
+      addButton(display, prefix);
+    }
+  });
+  const level = state.scope.length + 1;
+  crumb.append(el('span', 'crumb-info', 'L' + level + (level === 4 ? ' capabilities' : ' nodes')));
+}
+
+/* Rollup panel */
+function renderRollup(items) {
+  const body = $('rollup-body');
+  body.replaceChildren();
+  const counts = SDKS.map(() => ({ m:0, p:0, g:0, n:0, u:0 }));
+  items.forEach(item => item.statuses.forEach((status, i) => { counts[i][status] += 1; }));
+  SDKS.forEach((sdk, i) => {
+    const tr = document.createElement('tr');
+    if (state.sdk === sdk.id) tr.className = 'focus';
+    tr.append(el('td', '', sdk.name), el('td', '', 'T' + sdk.tier));
+    ['m', 'p', 'g', 'u', 'n'].forEach(status => {
+      const td = el('td', '', String(counts[i][status]));
+      if (counts[i][status] > 0) td.className = status;
+      tr.append(td);
+    });
+    body.append(tr);
+  });
+}
+
+/* Apply */
+function apply() {
+  const result = state.rollup && state.scope.length < 3 ? applyRollup() : applyDetail();
+  capHead.textContent = state.rollup && state.scope.length < 3
+    ? 'Capability · L' + (state.scope.length + 1) + ' rollup'
+    : 'Capability · L4 outcome';
+  renderCrumb();
+  empty.hidden = result.shown !== 0;
+
+  const unit = result.level === 4 ? 'capabilities' : 'L' + result.level + ' nodes';
+  $('visible-count').textContent = result.shown + ' of ' + result.total + ' ' + unit +
+    (state.sdk === 'all' ? '' : ' · focus ' + SDKS[INDEX[state.sdk]].name) +
+    (state.status === 'all' ? '' : ' · ' + LABEL[state.status]);
+  renderRollup(result.items);
+
+  document.querySelectorAll('.sdk-head').forEach(th => {
+    th.classList.toggle('focus', th.dataset.sdk === state.sdk);
+  });
+}
+
+/* Wiring */
+function setStateFromControls() {
+  state.q = $('q').value.trim().toLowerCase();
+  state.sdk = sdkSelect.value;
+  paintChips();
+  apply();
+  syncHash();
+}
+$('q').addEventListener('input', setStateFromControls);
+sdkSelect.addEventListener('change', setStateFromControls);
+
+document.querySelectorAll('#view-chips .chip').forEach(button => {
+  button.addEventListener('click', () => {
+    const next = button.dataset.view === 'rollup';
+    if (next !== state.rollup) { state.rollup = next; state.scope = []; }
+    paintChips();
+    apply();
+    syncHash();
+  });
+});
+
+$('reset').addEventListener('click', () => {
+  state.q = ''; state.l1 = 'all'; state.status = 'all'; state.sdk = 'all';
+  state.rollup = false; state.scope = [];
+  $('q').value = ''; sdkSelect.value = 'all';
+  paintChips(); apply(); syncHash();
+});
+
+$('copy').addEventListener('click', async () => {
+  const button = $('copy');
+  try {
+    await navigator.clipboard.writeText(location.href);
+  } catch {
+    const area = document.createElement('textarea');
+    area.value = location.href;
+    document.body.append(area);
+    area.select();
+    try { document.execCommand('copy'); } catch {}
+    area.remove();
+  }
+  const previous = button.textContent;
+  button.textContent = 'Copied';
+  setTimeout(() => { button.textContent = previous; }, 1400);
+});
+
+/* Scope validation and hash */
+function validScope(labels) {
+  const out = [];
+  for (const label of labels) {
+    if (out.length >= 3) break;
+    const candidate = [...out, label];
+    const exists = rowRecords.some(row => candidate.every((value, i) => pathOf(row)[i] === value));
+    if (!exists) break;
+    out.push(label);
+  }
+  return out;
+}
+function syncHash() {
+  const params = new URLSearchParams();
+  if (state.q) params.set('q', state.q);
+  if (state.l1 !== 'all') params.set('l1', state.l1);
+  if (state.status !== 'all') params.set('status', state.status);
+  if (state.sdk !== 'all') params.set('sdk', state.sdk);
+  if (state.rollup) {
+    params.set('view', 'rollup');
+    state.scope.forEach(label => params.append('scope', label));
+  }
+  const hash = params.toString();
+  history.replaceState(null, '', hash ? '#' + hash : location.pathname + location.search);
+}
+function readHash() {
+  const params = new URLSearchParams(location.hash.replace(/^#/, ''));
+  const q = params.get('q');
+  const l1 = params.get('l1');
+  const status = params.get('status');
+  const sdk = params.get('sdk');
+  if (q) { state.q = q.toLowerCase(); $('q').value = q; }
+  if (l1 && (l1 === 'all' || l1Values.includes(l1))) state.l1 = l1;
+  if (status && STATUSES.some(([value]) => value === status)) state.status = status;
+  if (sdk && (sdk === 'all' || SDKS.some(item => item.id === sdk))) state.sdk = sdk;
+  if (params.get('view') === 'rollup') {
+    state.rollup = true;
+    state.scope = validScope(params.getAll('scope'));
+  }
+  sdkSelect.value = state.sdk;
+}
+
+readHash();
+paintChips();
+apply();
+</script>
+</body>
+</html>
